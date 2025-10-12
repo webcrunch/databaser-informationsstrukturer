@@ -1,0 +1,105 @@
+services:
+  # 1. Relationsdatabas: PostgreSQL (Robust standardval)
+  postgres_db:
+    image: postgres:latest
+    container_name: mai25ma_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: main_database
+    ports:
+      - "5432:5432" # GUI-anslutning: localhost:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # 1A. GUI för PostgreSQL: pgAdmin
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: mai25ma_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: verysecurepassword
+      PGADMIN_SERVER_URL: postgres_db:5432
+    ports:
+      - "5050:80" # pgAdmin GUI nås på http://localhost:5050
+    depends_on:
+      - postgres_db
+
+  # 2. Relationsdatabas: MySQL (Alternativ för projekt eller övning)
+  mysql_db:
+    image: mysql:8.0
+    container_name: mai25ma_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: main_database
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306" # GUI-anslutning: localhost:3306
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  # 3. NoSQL: MongoDB (Dokumentdatabas för kursöversikten)
+  mongo_db:
+    image: mongo:latest
+    container_name: mai25ma_mongo
+    restart: always
+    ports:
+      - "27017:27017" # GUI-anslutning: localhost:27017
+    volumes:
+      - mongo_data:/data/db
+
+  # 3A. GUI för MongoDB: Mongo Express
+  mongo_express:
+    image: mongo-express
+    container_name: mai25ma_mongoexpress
+    restart: always
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo_db
+      ME_CONFIG_BASICAUTH_USERNAME: mongo_user
+      ME_CONFIG_BASICAUTH_PASSWORD: mongo_password
+    ports:
+      - "8081:8081" # Mongo Express GUI nås på http://localhost:8081
+    depends_on:
+      - mongo_db
+
+  # 4. NoSQL: Redis (Key-Value Store för kursöversikten)
+  redis_cache:
+    image: redis:latest
+    container_name: mai25ma_redis
+    restart: always
+    ports:
+      - "6379:6379" # GUI-anslutning: localhost:6379
+    volumes:
+      - redis_data:/data
+
+  # 4A. GUI för Redis: RedisInsight (Officiellt webbgränssnitt)
+  redis_insight:
+    image: redis/redisinsight:latest
+    container_name: mai25ma_redisinsight
+    restart: always
+    ports:
+      - "8001:8001" # RedisInsight GUI nås på http://localhost:8001
+    depends_on:
+      - redis_cache # Startar efter Redis
+
+  # 5. Din Framtida Applikation (Avkommenteras vid projektstart)
+  # app_server:
+  #   build: .
+  #   container_name: mai25ma_app
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     - postgres_db
+  #   environment:
+  #     DB_HOST: postgres_db
+  #     DB_NAME: main_database
+
+volumes:
+  postgres_data:
+  mysql_data:
+  mongo_data:
+  redis_data:
