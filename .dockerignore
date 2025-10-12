@@ -1,0 +1,17 @@
+Ignorera Git-relaterat material
+.git
+.gitignore
+
+Ignorera Docker-relaterade filer
+.dockerignore
+
+Inkludera inte docker-compose.yml i app-containerns byggkontext
+docker-compose.yml
+Dockerfile
+
+Ignorera stora beroendekataloger för att snabba upp byggen
+node_modules
+venv
+build
+dist
+temp

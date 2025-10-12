@@ -1,0 +1,15 @@
+Operativsystemspecifika filer
+.DS_Store
+Thumbs.db
+desktop.ini
+
+Byggresultat och beroenden
+/node_modules
+/venv/
+/pycache/
+*.pyc
+*.log
+
+Miljöfiler
+.env
+.local
