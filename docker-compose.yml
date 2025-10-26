@@ -42,6 +42,18 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
 
+  # arbeta med adminer istället
+  # Lägg till detta som en ny service i din docker-compose.yml
+  adminer:
+    image: adminer:latest
+    container_name: mai25ma_adminer
+    restart: always
+    ports:
+      - "8080:8080" # Adminer GUI nås på http://localhost:8080 (Eller välj valfri ledig port)
+    depends_on:
+      - postgres_db # Beror på båda databaserna
+      - mysql_db
+
   # 3. NoSQL: MongoDB (Dokumentdatabas för kursöversikten)
   mongo_db:
     image: mongo:latest
@@ -66,6 +78,13 @@ services:
     depends_on:
       - mongo_db
 
+    # ME_CONFIG_BASICAUTH_USERNAME: root
+    #   ME_CONFIG_BASICAUTH_PASSWORD: example
+
+    #   ME_CONFIG_MONGODB_ADMINUSERNAME: root
+    #   ME_CONFIG_MONGODB_ADMINPASSWORD: example
+    #   ME_CONFIG_MONGODB_ENABLE_ADMIN: 'true' # Använd sträng 'true'
+
   # 4. NoSQL: Redis (Key-Value Store för kursöversikten)
   redis_cache:
     image: redis:latest
@@ -77,14 +96,26 @@ services:
       - redis_data:/data
 
   # 4A. GUI för Redis: RedisInsight (Officiellt webbgränssnitt)
-  redis_insight:
-    image: redis/redisinsight:latest
-    container_name: mai25ma_redisinsight
+  # redis_insight:
+  #   image: redis/redisinsight:latest
+  #   container_name: mai25ma_redisinsight
+  #   restart: always
+  #   ports:
+  #     - "7777:8001" # RedisInsight GUI nås på http://localhost:8001
+  #   depends_on:
+  #     - redis_cache # Startar efter Redis
+
+  redis_commander:
+    image: rediscommander/redis-commander
+    container_name: mai25ma_rediscommander
     restart: always
+    environment:
+      # Använd Containernamnet för anslutning
+      REDIS_HOSTS: local_redis:redis_cache:6379
     ports:
-      - "8001:8001" # RedisInsight GUI nås på http://localhost:8001
+      - "8082:8081" # GUI nås på http://localhost:8082
     depends_on:
-      - redis_cache # Startar efter Redis
+      - redis_cache
 
   # 5. Din Framtida Applikation (Avkommenteras vid projektstart)
   # app_server:
