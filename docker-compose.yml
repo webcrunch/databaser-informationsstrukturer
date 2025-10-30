@@ -5,9 +5,17 @@ services:
     container_name: mai25ma_postgres
     restart: always
     environment:
-      POSTGRES_USER: user
+      POSTGRES_USER: user # Applikationsanvändare
       POSTGRES_PASSWORD: password
       POSTGRES_DB: main_database
+
+      # 🌟 NYTT: Skapa en separat administrativ/superanvändare
+      POSTGRES_SUPERUSER: owneruser # Användarnamn för den nya ägaren
+      POSTGRES_SUPERUSER_PASSWORD: securepassword # Lösenord för den nya ägaren
+    # environment:
+    # POSTGRES_USER: user
+    # POSTGRES_PASSWORD: password
+    # POSTGRES_DB: main_database
     ports:
       - "5432:5432" # GUI-anslutning: localhost:5432
     volumes:
@@ -49,41 +57,89 @@ services:
     container_name: mai25ma_adminer
     restart: always
     ports:
-      - "8080:8080" # Adminer GUI nås på http://localhost:8080 (Eller välj valfri ledig port)
+      - "8085:8080" # Adminer GUI nås på http://localhost:8080 (Eller välj valfri ledig port)
     depends_on:
       - postgres_db # Beror på båda databaserna
       - mysql_db
+  # 3. Modelleringsverktyg A: DrawDB (Schema Editor)
+  # drawdb:
+  #   # OBS! Byt bildnamn här
+  #   image: drawdb/mysql-web:latest
+  #   container_name: mai25ma_drawdb
+  #   ports:
+  #     - "3000:80" # DrawDB nås på http://localhost:3000
+  #   restart: unless-stopped
+
+  # 4. Modelleringsverktyg B: draw.io (Allmän Diagram Editor)
+
+  # 3. Modelleringsverktyg A: DrawDB (Schema Editor)
+  drawdb:
+    # OBS! ANVÄND NU DENNA GHCR.IO-LÄNK
+    image: ghcr.io/drawdb-io/drawdb:latest
+    container_name: mai25ma_drawdb
+    ports:
+      - "3000:80" # DrawDB nås på http://localhost:3000
+    restart: unless-stopped
+
+  drawio:
+    image: jgraph/drawio:latest
+    container_name: mai25ma_drawio
+    ports:
+      - "8080:8080" # draw.io nås på http://localhost:8080
+    restart: unless-stopped
+    # draw.io sparar som filer på din dator eller till molntjänster,
+    # så ingen volym behövs heller här.
 
   # 3. NoSQL: MongoDB (Dokumentdatabas för kursöversikten)
   mongo_db:
     image: mongo:latest
     container_name: mai25ma_mongo
     restart: always
+    environment:
+      # --- ADMIN ANVÄNDARE (REKOMMENDERAS STARKAST) ---
+      MONGO_INITDB_ROOT_USERNAME: adminuser # Välj ett starkare admin-användarnamn
+      MONGO_INITDB_ROOT_PASSWORD: password # Välj ett starkt admin-lösenord
+
+      # --- SKAPA EN INITIAL DATABAS ---
+      MONGO_INITDB_DATABASE: main_database # Den databas du vill att ska skapas vid första körning
     ports:
       - "27017:27017" # GUI-anslutning: localhost:27017
     volumes:
       - mongo_data:/data/db
 
-  # 3A. GUI för MongoDB: Mongo Express
-  mongo_express:
-    image: mongo-express
-    container_name: mai25ma_mongoexpress
-    restart: always
-    environment:
-      ME_CONFIG_MONGODB_SERVER: mongo_db
-      ME_CONFIG_BASICAUTH_USERNAME: mongo_user
-      ME_CONFIG_BASICAUTH_PASSWORD: mongo_password
-    ports:
-      - "8081:8081" # Mongo Express GUI nås på http://localhost:8081
-    depends_on:
-      - mongo_db
+  # # 3A. GUI för MongoDB: Mongo Express
+  # mongo_express:
+  #   image: mongo-express
+  #   container_name: mai25ma_mongoexpress
+  #   restart: always
+  #   environment:
+  #     # 1. Hostnamn för Docker-skriptet (Fixar 'Name does not resolve')
+  #     MONGODB_SERVER: mongo_db
 
-    # ME_CONFIG_BASICAUTH_USERNAME: root
-    #   ME_CONFIG_BASICAUTH_PASSWORD: example
+  #     # 2. Hostnamn för Mongo Express-appen
+  #     ME_CONFIG_MONGODB_SERVER: mongo_db
 
-    #   ME_CONFIG_MONGODB_ADMINUSERNAME: root
-    #   ME_CONFIG_MONGODB_ADMINPASSWORD: example
-    #   ME_CONFIG_MONGODB_ENABLE_ADMIN: 'true' # Använd sträng 'true'
+  #     # 3. Användaruppgifter (Måste matcha mongo_db root-användaren)
+  #     ME_CONFIG_BASICAUTH_USERNAME: adminuser
+  #     ME_CONFIG_BASICAUTH_PASSWORD: password
+
+  #     # 4. Talar om för Mongo Express att använda admin-autentisering
+  #     ME_CONFIG_MONGODB_ENABLE_ADMIN: "true"
+
+  #     # 🌟 5. KRITISK FIX: Talar om för Mongo Express att logga in på 'admin'-databasen.
+  #     ME_CONFIG_MONGODB_AUTH_DATABASE: admin
+
+  #   ports:
+  #     - "8081:8081" # Mongo Express GUI nås på http://localhost:8081
+  #   depends_on:
+  #     - mongo_db
+
+  # ME_CONFIG_BASICAUTH_USERNAME: root
+  #   ME_CONFIG_BASICAUTH_PASSWORD: example
+
+  #   ME_CONFIG_MONGODB_ADMINUSERNAME: root
+  #   ME_CONFIG_MONGODB_ADMINPASSWORD: example
+  #   ME_CONFIG_MONGODB_ENABLE_ADMIN: 'true' # Använd sträng 'true'
 
   # 4. NoSQL: Redis (Key-Value Store för kursöversikten)
   redis_cache:
