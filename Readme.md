@@ -1,16 +1,22 @@
-Databasteknik: Kursmiljö och Projektstack (Docker Compose)
-Detta arkiv innehåller den Docker Compose-fil (docker-compose.yml) som används för att sätta upp den fullständiga databasstacken för kursen Databasteknik.
+# 💾 Databasteknik: Kursmiljö och Projektstack (Docker Compose)
 
-Miljön inkluderar två relationsdatabaser (PostgreSQL, MySQL) och två NoSQL-databaser (MongoDB, Redis) samt deras respektive webbaserade administrationsverktyg.
+Detta arkiv innehåller den Docker Compose-fil (`docker-compose.yml`) som används för att sätta upp den fullständiga databasstacken för kursen Databasteknik.
 
-🚀 Kom igång
-Krav
-Docker Desktop (eller Docker Engine)
+Miljön inkluderar **relationsdatabaser** (PostgreSQL, MySQL), **NoSQL-databaser** (MongoDB, Redis) samt **webbaserade administrationsverktyg** och **modelleringsverktyg** för att täcka alla kursmoment.
 
-Docker Compose (ofta inbyggt i Docker Desktop)
+---
 
-Steg 1: Starta alla tjänster
-Öppna terminalen i samma mapp som filen docker-compose.yml och kör kommandot:
+## 🚀 Kom igång
+
+### Krav
+* Docker Desktop (eller Docker Engine)
+* Docker Compose (ofta inbyggt i Docker Desktop)
+
+### Steg 1: Starta alla tjänster
+Öppna terminalen i samma mapp som filen `docker-compose.yml` och kör kommandot:
+
+```bash
+```
 
 docker compose up -d
 
