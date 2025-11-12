@@ -1,0 +1,21 @@
+[Teacher] <-------- 1:M -------- [Course]
+  * id (PK)                        * code (PK)
+  * firstName                      * name
+  * lastName                       * credits
+  * department                     * responsibleTeacherId (FK till Teacher.id)
+
+[Student] <-------- M:M -------- [Course]
+  * id (PK) 
+  * firstName
+  * lastName
+  * personNr (UNIQUE)
+  * email (UNIQUE)
+
+                    |
+                    | Löses av:
+                    V
+                [StudentEnrollment]
+                  * studentId (PK, FK till Student.id)
+                  * courseCode (PK, FK till Course.code)
+                  * grade
+                  * completionDate
