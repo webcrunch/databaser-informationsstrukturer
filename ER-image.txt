@@ -19,3 +19,50 @@
                   * courseCode (PK, FK till Course.code)
                   * grade
                   * completionDate
+
+
+
+
+  erDiagram
+    TEACHER ||--o{ COURSE : is_responsible_for
+    STUDENT ||--o{ STUDENT_STATUS : has_status
+    STUDENT }o--o{ STUDENT_ENROLLMENT : is_registered
+    COURSE }o--o{ STUDENT_ENROLLMENT : is_taken_in
+
+    STUDENT {
+        INT id PK "Primärnyckel"
+        VARCHAR firstName "Förnamn"
+        VARCHAR lastName "Efternamn"
+        VARCHAR personNr "Personnummer (Unik)"
+        VARCHAR email "E-post (Unik)"
+        DATE registeredDate "Registreringsdatum"
+        INT statusId FK "Främmande nyckel till StudentStatus"
+    }
+
+    STUDENT_STATUS {
+        INT id PK "Primärnyckel"
+        VARCHAR statusName "Statusnamn (t.ex. 'Aktiv', 'Examen')"
+    }
+
+    TEACHER {
+        INT id PK "Primärnyckel"
+        VARCHAR firstName "Förnamn"
+        VARCHAR lastName "Efternamn"
+        VARCHAR email "E-post (Unik)"
+        VARCHAR department "Avdelning"
+    }
+
+    COURSE {
+        VARCHAR code PK "Kurskod (Primärnyckel)"
+        VARCHAR name "Namn"
+        DECIMAL credits "Poäng"
+        INT responsibleTeacherId FK "Ansvarig lärare"
+    }
+
+    STUDENT_ENROLLMENT {
+        INT studentId FK "Främmande nyckel till Student"
+        VARCHAR courseCode FK "Främmande nyckel till Course"
+        VARCHAR grade "Betyg (Kan vara NULL)"
+        DATE completionDate "Slutförandedatum (Kan vara NULL)"
+        PRIMARY KEY (studentId, courseCode) "Sammansatt nyckel"
+    }

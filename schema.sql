@@ -7,8 +7,11 @@ CREATE TABLE IF NOT EXISTS `Student` (
     `personNr` VARCHAR(13) NOT NULL UNIQUE, -- Unik, men inte PK, för säkerhet och flexibilitet
     `email` VARCHAR(255) NOT NULL UNIQUE,
     `registeredDate` DATE NOT NULL,
-    PRIMARY KEY (`id`)
-);
+    `statusId` INT NOT NULL, -- NY KOLUMN: Främmande nyckel till StudentStatus
+    PRIMARY KEY (`id`),
+
+-- NY FK: Etablerar 1-M relationen: StudentStatus (1) -> Student (M)
+FOREIGN KEY (`statusId`) REFERENCES `StudentStatus`(`id`) );
 
 -- 2. Skapa tabellen Teacher
 -- Lagrar information om lärare. Har en unik e-postadress.
@@ -51,5 +54,26 @@ FOREIGN KEY (`studentId`) REFERENCES `Student` (`id`),
 -- FOREIGN KEY 2: Kopplar till Course
 FOREIGN KEY (`courseCode`) REFERENCES `Course`(`code`) );
 
+-- 5. NY TABELL: StudentStatus
+-- Definierar alla möjliga studentstatusar (lookup-tabell)
+CREATE TABLE IF NOT EXISTS `StudentStatus` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `statusName` VARCHAR(50) NOT NULL UNIQUE,
+    PRIMARY KEY (`id`)
+);
+
 -- Valfritt: Skapa ett index för snabbare sökningar på kurskod i registreringstabellen
 CREATE INDEX idx_courseCode_enrollment ON StudentEnrollment (courseCode);
+
+-- Exempeldata: Lägg till grundläggande statusar
+-- Obs! Dessa måste läggas in FÖRE du lägger till studenter
+INSERT IGNORE INTO
+    `StudentStatus` (`statusName`)
+VALUES ('Aktiv'),
+    ('Examen'),
+    ('Utskriven'),
+    ('Tjänstledig');
+
+-- Nu kan du lägga till nya studenter med en giltig status, t.ex. statusId = 1 (Aktiv)
+-- Exempel: INSERT INTO `Student` (firstName, lastName, personNr, email, registeredDate, statusId)
+-- VALUES ('Anna', 'Andersson', '19950101-1234', 'anna.a@skola.se', '2023-08-20', 1);
