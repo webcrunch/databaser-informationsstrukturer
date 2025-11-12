@@ -1,150 +1,235 @@
-# 💾 Databasteknik: Kursmiljö och Projektstack (Docker Compose)
+🌐 Kursportal API (Nexus DB)
 
-Detta arkiv innehåller den Docker Compose-fil (`docker-compose.yml`) som används för att sätta upp den fullständiga databasstacken för kursen Databasteknik.
+Detta är ett RESTful API byggt med Flask och Flask-RESTX för att hantera studenter, lärare, kurser och kursregistreringar mot en MySQL-databas.
 
-Miljön inkluderar **relationsdatabaser** (PostgreSQL, MySQL), **NoSQL-databaser** (MongoDB, Redis) samt **webbaserade administrationsverktyg** och **modelleringsverktyg** för att täcka alla kursmoment.
+API:et är komplett med fullständiga CRUD-operationer samt avancerade databasfunktioner (Stored Procedures och Batch Queries).
 
----
+🚀 Komma Igång (Förutsatt Docker Compose)
 
-## 🚀 Kom igång
+För att köra systemet, se till att du har Docker och Docker Compose installerat.
 
-### Krav
-* Docker Desktop (eller Docker Engine)
-* Docker Compose (ofta inbyggt i Docker Desktop)
+Starta applikationen och databasen:
 
-### Steg 1: Starta alla tjänster
-Öppna terminalen i samma mapp som filen `docker-compose.yml` och kör kommandot:
+docker-compose up --build
 
-```bash
-```
 
-docker compose up -d
+Öppna API-dokumentationen:
+När containrarna har startat, är API:et tillgängligt på:
 
-Detta startar fyra databaser och tre GUI-verktyg. Flaggan -d (detach) låter dem köras i bakgrunden.
+Swagger UI (Dokumentation): http://localhost:5000/apidocs
 
-Steg 2: Stoppa alla tjänster
-När du är klar med arbetet, stoppa och städa upp alla containers (volymerna behålls):
+Bas-URL: http://localhost:5000/
 
-docker compose down
+📊 Databasmodell
 
-📊 Databasöversikt och Anslutningar
-Alla tjänster körs på localhost. Använd portnumret nedan för att ansluta via valfritt externt GUI-verktyg (t.ex. DBeaver, MySQL Workbench, Redis Desktop Manager).
+API:et interagerar med följande fyra tabeller:
 
-1. Relationsdatabaser (RDBMS)
-Dessa används för SQL-övningar, normalisering och det individuella projektet.
+Tabell
 
-Tjänst
+Beskrivning
 
-Port
+Relationer
 
-Användare
+Student
 
-Lösenord
+Studentinformation.
 
-Databas
+1:M till StudentEnrollment
 
-Webbläsarens GUI
+Teacher
 
-PostgreSQL
+Lärarinformation och avdelning.
 
-5432
+1:M till Course
 
-user
+Course
 
-password
+Kursdetaljer, inklusive ansvarig lärare.
 
-main_database
+M:1 till Teacher, 1:M till StudentEnrollment
 
-Nås via pgAdmin
+StudentEnrollment
 
-MySQL 8.0
+Kopplingstabell mellan Student och Course, lagrar betyg (grade) och slutförandedatum (completionDate).
 
-3306
+M:M mellan Student och Course
 
-user
+⚙️ API Endpoints (Sammanfattning)
 
-password
+Alla endpoints är grupperade i Namespaces (t.ex. /students, /courses) och dokumenterade i Swagger UI (/apidocs).
 
-main_database
+1. Studenthantering (/students)
 
-Inget dedikerat GUI i denna stack
+Metod
 
-pgAdmin (PostgreSQL GUI)
-URL: http://localhost:5050
+Route
 
-Inloggning: admin@example.com / verysecurepassword
+Beskrivning
 
-Obs! PostgreSQL-databasen är redan registrerad i pgAdmin efter uppstart.
+GET
 
-2. NoSQL-databaser (Översikt)
-Dessa används primärt för att studera NoSQL-paradigmer och uppnå kursens översiktsmål.
+/students/
 
-Tjänst
+Hämta alla studenter.
 
-Port
+POST
 
-Typ
+/students/
 
-Webbläsarens GUI
+Skapa en ny student.
 
-MongoDB
+GET
 
-27017
+/students/<id>
 
-Dokumentdatabas
+Hämta student baserat på ID.
 
-Nås via Mongo Express
+PUT
 
-Redis
+/students/<id>
 
-6379
+Uppdatera studentinformation.
 
-Key-Value Store
+DELETE
 
-Nås via RedisInsight
+/students/<id>
 
-Mongo Express (MongoDB GUI)
-URL: http://localhost:8081
+Radera en student.
 
-Inloggning: mongo_user / mongo_password
+2. Lärarhantering (/teachers)
 
-RedisInsight (Redis GUI)
-URL: http://localhost:8001
+Metod
 
-Setup: När du loggar in första gången behöver du lägga till Redis-databasen manuellt.
+Route
 
-Välj "Add Redis Database".
+Beskrivning
 
-Välj "Connect to a Redis OSS instance".
+GET
 
-Ange följande anslutningsdetaljer:
+/teachers/
 
-Host: redis_cache (Detta är servicenamnet i Docker-nätverket)
+Hämta alla lärare.
 
-Port: 6379
+POST
 
-Name: Kurs Redis Cache
+/teachers/
 
-Klicka på "Add Redis Database". Du är nu ansluten!
+Skapa en ny lärare.
 
-🛠 Framtida Applikationsintegration
-Denna stack är förberedd för att inkludera din egna applikationskod (t.ex. Python, Java, C#) i en container, vilket är nödvändigt för projektets integrationsdel.
+GET
 
-Anslutning inifrån app-containern
-När du avkommenterar app_server i docker-compose.yml, använd tjänstenamnet som host i din applikationskod:
+/teachers/<id>
 
-Om du använder...
+Hämta lärare baserat på ID.
 
-Använd detta som DB Host
+PUT
 
-PostgreSQL
+/teachers/<id>
 
-postgres_db
+Uppdatera lärarinformation.
 
-MySQL
+DELETE
 
-mysql_db
+/teachers/<id>
 
-MongoDB
+Radera en lärare (misslyckas om ansvarig för kurs).
 
-mongo_db
+3. Kurshantering (/courses)
+
+Metod
+
+Route
+
+Beskrivning
+
+GET
+
+/courses/
+
+Hämta alla kurser.
+
+POST
+
+/courses/
+
+Skapa en ny kurs.
+
+GET
+
+/courses/<code string>
+
+Hämta kurs baserat på kurskod.
+
+PUT
+
+/courses/<code string>
+
+Uppdatera kursinformation.
+
+DELETE
+
+/courses/<code string>
+
+Radera en kurs (misslyckas om studenter är inskrivna).
+
+GET
+
+/courses/enrollment_counts
+
+AVANCERAD: Lista alla kurser och antalet inskrivna studenter i varje kurs (Batch Query).
+
+4. Registreringshantering (/enrollments)
+
+Metod
+
+Route
+
+Beskrivning
+
+GET
+
+/enrollments/
+
+Hämta alla registreringar.
+
+POST
+
+/enrollments/
+
+Skapa en ny manuell registrering.
+
+POST
+
+/enrollments/register
+
+AVANCERAD: Registrera student på kurs med en Stored Procedure (RegisterStudentToCourse). Kräver studentId och courseCode.
+
+GET
+
+/enrollments/<studentId>/<courseCode>
+
+Hämta en specifik registrering.
+
+PUT
+
+/enrollments/<studentId>/<courseCode>
+
+Uppdatera betyg och/eller slutförandedatum.
+
+DELETE
+
+/enrollments/<studentId>/<courseCode>
+
+Radera en specifik registrering.
+
+🔑 Avancerade Funktioner
+
+Detta API har implementerat stöd för att hantera komplex databaslogik direkt via SQL-filer:
+
+1. Stored Procedure (Effektiv registrering)
+
+Endpointen POST /enrollments/register använder den lagrade proceduren RegisterStudentToCourse för att kapsla in databaslogik och säkerställa en atomisk registrering.
+
+2. Batch Query (Statistik)
+
+Endpointen GET /courses/enrollment_counts exekverar en komplex JOIN och GROUP BY-fråga för att generera en översikt av kursregistreringar i en enda databasoperation.
