@@ -1,6 +1,6 @@
 🌐 Kursportal API (Nexus DB)
 
-Detta är ett RESTful API byggt med Flask och Flask-RESTX för att hantera studenter, lärare, kurser och kursregistreringar mot en MySQL-databas.
+Detta är ett RESTful API byggt med Flask och Flask-RESTX för att hantera studenter, lärare, kurser, statusar och kursregistreringar mot en MySQL-databas.
 
 API:et är komplett med fullständiga CRUD-operationer samt avancerade databasfunktioner (Stored Procedures och Batch Queries).
 
@@ -20,9 +20,48 @@ Swagger UI (Dokumentation): http://localhost:5000/apidocs
 
 Bas-URL: http://localhost:5000/
 
+🛠️ Databasadministration (Adminer)
+
+Adminer är ett lättviktsverktyg för databashantering som körs i en separat Docker-container i din miljö. Du kan använda det för att bläddra i tabeller, köra SQL-frågor och validera data direkt.
+
+1. Öppna Adminer
+
+Öppna Adminer i din webbläsare:
+
+http://localhost:8080/
+
+
+2. Logga in
+
+Använd följande inloggningsuppgifter. Dessa matchar de miljövariabler som definierats för mysql och adminer i din docker-compose.yml.
+
+Fält
+
+Värde
+
+System
+
+MySQL (Välj från rullgardinsmenyn)
+
+Server
+
+mysql (Namnet på databastjänsten i Docker)
+
+Användare
+
+user
+
+Lösenord
+
+password
+
+Databas
+
+Nexus_DB
+
 📊 Databasmodell
 
-API:et interagerar med följande fyra tabeller:
+API:et interagerar med följande tabeller:
 
 Tabell
 
@@ -34,7 +73,13 @@ Student
 
 Studentinformation.
 
-1:M till StudentEnrollment
+M:1 till StudentStatus, 1:M till StudentEnrollment
+
+StudentStatus
+
+Lookup-tabell för studentens tillstånd (Aktiv, Examen, etc.).
+
+1:M till Student
 
 Teacher
 
@@ -221,6 +266,38 @@ DELETE
 /enrollments/<studentId>/<courseCode>
 
 Radera en specifik registrering.
+
+5. Statushantering (/statuses)
+
+Metod
+
+Route
+
+Beskrivning
+
+GET
+
+/statuses/
+
+Hämta alla tillgängliga statusar.
+
+POST
+
+/statuses/
+
+Skapa en ny status (t.ex. 'Permitterad').
+
+GET
+
+/statuses/<id>
+
+Hämta specifik status.
+
+DELETE
+
+/statuses/<id>
+
+Radera en status (misslyckas om den används av studenter).
 
 🔑 Avancerade Funktioner
 
