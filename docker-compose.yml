@@ -36,7 +36,7 @@ services:
       - postgres_db
 
   # ---------------------------------
-  # Databastjänsten (MySQL/MariaDB)
+  # 1. Relationsdatabas: MySQL (Scratchpad/Övning)
   # ---------------------------------
   # 2. Relationsdatabas: MySQL (Alternativ för projekt eller övning samt inga init skript körs när den startar)
   mysql_db:
@@ -49,9 +49,10 @@ services:
       MYSQL_USER: user
       MYSQL_PASSWORD: password
     ports:
-      - "3307:3306" # GUI-anslutning: localhost:3306
+      - "3307:3306" # GUI-anslutning: localhost:3307
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mysql_scratch_data:/var/lib/mysql
+      - ./user-upgrade:/docker-entrypoint-initdb.d
   # ---------------------------------
   # Databastjänsten för den examinerade uppgiften (MySQL/MariaDB)
   # ---------------------------------
@@ -66,9 +67,9 @@ services:
       MYSQL_USER: nexusUser
       MYSQL_PASSWORD: anotherPassword
     ports:
-      - "3306:3306"
+      - "3306:3306" # GUI-anslutning: localhost:3306
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mysql_nexus_data:/var/lib/mysql #
       - ./init-scripts:/docker-entrypoint-initdb.d
 
   # arbeta med adminer istället
@@ -249,6 +250,7 @@ services:
 
 volumes:
   postgres_data:
-  mysql_data:
+  mysql_scratch_data: # <-- NY VOLYM
+  mysql_nexus_data: # <-- NY VOLYM:
   mongo_data:
   redis_data:
