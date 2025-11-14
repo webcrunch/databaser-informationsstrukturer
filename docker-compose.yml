@@ -38,7 +38,7 @@ services:
   # ---------------------------------
   # Databastjänsten (MySQL/MariaDB)
   # ---------------------------------
-  # 2. Relationsdatabas: MySQL (Alternativ för projekt eller övning)
+  # 2. Relationsdatabas: MySQL (Alternativ för projekt eller övning samt inga init skript körs när den startar)
   mysql_db:
     image: mysql:8.0
     container_name: mai25ma_mysql
@@ -52,6 +52,24 @@ services:
       - "3306:3306" # GUI-anslutning: localhost:3306
     volumes:
       - mysql_data:/var/lib/mysql
+  # ---------------------------------
+  # Databastjänsten för den examinerade uppgiften (MySQL/MariaDB)
+  # ---------------------------------
+  # 2. Relationsdatabas: MySQ
+  mysql_nexus_db:
+    image: mysql:8.0
+    container_name: mai25ma_nexus_proj
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: Nexus_DB
+      MYSQL_USER: nexusUser
+      MYSQL_PASSWORD: anotherPassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-scripts:/docker-entrypoint-initdb.d
 
   # arbeta med adminer istället
   # Lägg till detta som en ny service i din docker-compose.yml
@@ -64,6 +82,7 @@ services:
     depends_on:
       - postgres_db # Beror på båda databaserna
       - mysql_db
+      - mysql_nexus_db
 
   # 3. Modelleringsverktyg A: DrawDB (Schema Editor)
   drawdb:
@@ -190,8 +209,8 @@ services:
   # Applikationstjänsten (Flask API)
   # ---------------------------------
   api:
-    build: .
-    container_name: course_api
+    build: ./backend
+    container_name: swagger_api_exam
     restart: always
     ports:
       - "5000:5000"
@@ -200,22 +219,22 @@ services:
       FLASK_APP: backend.py
 
       # Värdnamnet för databasen är namnet på Docker-tjänsten
-      MYSQL_DATABASE_HOST: mysql_db
+      MYSQL_DATABASE_HOST: mysql_nexus_db
 
       # Måste matcha MYSQL_DATABASE i mysql_db-tjänsten
-      MYSQL_DATABASE_DB: main_database
+      MYSQL_DATABASE_DB: Nexus_DB
 
       # Måste matcha MYSQL_USER i mysql_db-tjänsten
-      MYSQL_DATABASE_USER: user
+      MYSQL_DATABASE_USER: nexusUser
 
       # Måste matcha MYSQL_PASSWORD i mysql_db-tjänsten
-      MYSQL_DATABASE_PASSWORD: password
+      MYSQL_DATABASE_PASSWORD: anotherPassword
 
     # Använd 'flask run' kommandot för att starta
     command: flask run --host 0.0.0.0
 
     depends_on:
-      - mysql_db # Säkerställer att databasen startas innan API:et  # 5. Din Framtida Applikation (Avkommenteras vid projektstart)
+      - mysql_nexus_db # Säkerställer att databasen startas innan API:et  # 5. Din Framtida Applikation (Avkommenteras vid projektstart)
 
   # app_server:
   #   build: .
