@@ -17,13 +17,13 @@ TRUNCATE TABLE `StudentStatus`;
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- 1. DATA FÖR STUDENTSTATUS (Måste köras först)
--- 1. DATA FÖR STUDENTSTATUS (Måste köras först)
 INSERT INTO
     `StudentStatus` (`id`, `statusName`)
 VALUES (1, 'Aktiv'),
     (2, 'Examen'),
     (3, 'Utskriven'),
     (4, 'Tjänstledig');
+
 -- 2. DATA FÖR TEACHER (Lärare)
 -- Utökad lista med fler lärare (ID 1 till 5).
 INSERT INTO
@@ -153,8 +153,8 @@ VALUES (
         '950101-1234',
         'sara.s@mail.com',
         '2024-08-15',
-        1 -- Aktiv
-    ),
+        1
+    ), -- Aktiv
     (
         2,
         'Erik',
@@ -162,8 +162,8 @@ VALUES (
         '900202-5678',
         'erik.e@mail.com',
         '2024-09-01',
-        1 -- Aktiv
-    ),
+        1
+    ), -- Aktiv
     (
         3,
         'Lisa',
@@ -171,8 +171,8 @@ VALUES (
         '000303-9012',
         'lisa.l@mail.com',
         '2024-08-15',
-        2 -- Examen
-    ),
+        2
+    ), -- Examen
     (
         4,
         'Pelle',
@@ -180,8 +180,8 @@ VALUES (
         '880404-3456',
         'pelle.p@mail.com',
         '2024-10-10',
-        4 -- Tjänstledig
-    ),
+        4
+    ), -- Tjänstledig
     (
         5,
         'Maria',
@@ -189,8 +189,8 @@ VALUES (
         '020505-7890',
         'maria.m@mail.com',
         '2024-10-10',
-        3 -- Utskriven
-    ),
+        3
+    ), -- Utskriven
     (
         6,
         'Olle',
@@ -198,8 +198,8 @@ VALUES (
         '990606-2109',
         'olle.o@mail.com',
         '2024-11-01',
-        1 -- Aktiv
-    ),
+        1
+    ), -- Aktiv
     (
         7,
         'Frida',
@@ -207,8 +207,8 @@ VALUES (
         '970707-1122',
         'frida.f@mail.com',
         '2023-01-10',
-        1 -- Aktiv
-    ),
+        1
+    ), -- Aktiv
     (
         8,
         'Gustav',
@@ -216,8 +216,8 @@ VALUES (
         '850808-3344',
         'gustav.g@mail.com',
         '2023-08-20',
-        2 -- Examen
-    ),
+        2
+    ), -- Examen
     (
         9,
         'Hanna',
@@ -225,8 +225,8 @@ VALUES (
         '010909-5566',
         'hanna.h@mail.com',
         '2024-10-05',
-        4 -- Tjänstledig
-    ),
+        4
+    ), -- Tjänstledig
     (
         10,
         'Johan',
@@ -234,8 +234,9 @@ VALUES (
         '031010-7788',
         'johan.j@mail.com',
         '2024-11-15',
-        1 -- Aktiv
+        1
     );
+-- Aktiv
 
 -- 5. DATA FÖR STUDENTENROLLMENT (Inskrivningar)
 INSERT INTO

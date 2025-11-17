@@ -1,16 +1,26 @@
 Databas: NexusDB
-# Slutrapport: Student- och Kursadministrationssystem:
+# Teoretisk Rapport / Student- och Kursadministrationssystem:
 
 ## 🎯 1. Domän och Syfte
 
-Domän: Jag har valt att skapa en databas för hantering av studenter, lärare, kurser och kursregistreringar inom en universitetsmiljö (Kursportal).
+ #### Domän: 
+ Jag har valt att skapa en databas för hantering av studenter, lärare, kurser och kursregistreringar inom en universitetsmiljö (Kursportal).
 
-Syfte: Att skapa en databasmodell som är effektiv, skalbar och upprätthåller hög dataintegritet. Systemet ska kunna hantera de centrala enheterna (Student, Teacher, Course) och den komplexa Many-to-Many-relationen mellan studenter och kurser.
+ #### Syfte: 
+ Att skapa en databasmodell som är effektiv, skalbar och upprätthåller hög dataintegritet. Systemet ska kunna hantera de centrala enheterna (Student, Teacher, Course) och den komplexa Many-to-Many-relationen mellan studenter och kurser.
+
+#### Användarroller:
+ Databasen är designad för att hantera information som rör de två centrala användarrollerna i domänen:
+**Student:** En individ som registreras i systemet och kan skrivas in på kurser.
+**Lärare:** En individ som är anställd och har ansvar för en eller flera kurser.
+
+En administratörsroll (med rättigheter att skapa/radera användare och kurser) är inte en del av själva databasmodellen, utan förväntas hanteras av applikationslogiken ,t.ex. ett API, som ansluter till databasen.
 
 ## 🗃️ 2. Databasöversikt och Modell
 ![ER bild över systemet](Diagram2.png)
 
-### 🔑 2.1 Tabellstruktur och Nycklar (Baserat på ER-Diagrammet)
+### 🔑 2.1 Tabellstruktur och Nycklar 
+(Baserat på ER-Diagrammet)
 
 | Tabellnamn | Kolumn | Datatyp | Nyckeltyp | FK Pekar till |
 | :--- | :--- | :--- | :--- | :--- |
@@ -19,10 +29,10 @@ Syfte: Att skapa en databasmodell som är effektiv, skalbar och upprätthåller 
 | | `lastName` | VARCHAR(100) | - | N/A |
 | | `email` | VARCHAR(255) | - | N/A |
 | | `department` | VARCHAR(100) | - | N/A |
-| **Course** | `code` | VARCHAR(10) | **PK** | N/A |
+| **course** | `code` | VARCHAR(10) | **PK** | N/A |
 | | `name` | VARCHAR(255) | - | N/A |
 | | `credits` | DECIMAL(4, 2) | - | N/A |
-| | `responsibleId` | INTEGER | **FK** | `Teacher(id)` |
+| | `responsibleTeacherId` | INTEGER | **FK** | `Teacher(id)` |
 | **Student** | `id` | INTEGER | **PK** | N/A |
 | | `firstName` | VARCHAR(100) | - | N/A |
 | | `lastName` | VARCHAR(100) | - | N/A |
@@ -33,28 +43,28 @@ Syfte: Att skapa en databasmodell som är effektiv, skalbar och upprätthåller 
 | **StudentStatus** | `id` | INTEGER | **PK** | N/A |
 | | `statusName` | VARCHAR(50) | - | N/A |
 | **StudentEnrollment** | **`studentId`** | INTEGER | **PK, FK** | `Student(id)` |
-| | **`course...`** | VARCHAR(10) | **PK, FK** | `Course(code)` |
+| | **`courseCode`** | VARCHAR(10) | **PK, FK** | `Course(code)` |
 | | `grade` | VARCHAR(2) | - | N/A |
 | | `completionDate` | DATE | - | N/A |
 
-**(Notera:** Tabellen StudentEnrollment använder en Sammansatt Primärnyckel (PK), vilken består av studentId och course.... Båda dessa fält fungerar även som Främmande Nycklar (FK) till respektive entitet.)
+**(Notera:** Tabellen StudentEnrollment använder en Sammansatt Primärnyckel (PK), vilken består av studentId och courseCode.... Båda dessa fält fungerar även som Främmande Nycklar (FK) till respektive entitet.)
 ## 🔗 3. Relationer och Motivering
 
 ### → 3.1 One-to-Many (1-M) Relation
 
-Relation: Teacher (1) till Course (M). En lärare kan ansvara för flera kurser, men varje kurs har endast en ansvarig lärare.
+**Relation:** Teacher (1) till Course (M). En lärare kan ansvara för flera kurser, men varje kurs har endast en ansvarig lärare.
 
-Implementering: Detta realiseras genom den främmande nyckeln responsibleTeacherId i tabellen Course, som pekar på primärnyckeln i Teacher.
+**Implementering:** Detta realiseras genom den främmande nyckeln responsibleTeacherId i tabellen Course, som pekar på primärnyckeln i Teacher.
 
-Motivering: Denna separering minskar dataredundans. Istället för att duplicera lärarens information (namn, e-post, avdelning) för varje kurs de ansvarar för, lagras endast en liten integer-nyckel.
+**Motivering:** Denna separering minskar dataredundans. Istället för att duplicera lärarens information (namn, e-post, avdelning) för varje kurs de ansvarar för, lagras endast en liten integer-nyckel.
 
 ### ↔️ 3.2 Many-to-Many (M-M) Relation
 
-Relation: Student (M) till Course (M). En student kan läsa flera kurser, och varje kurs har flera studenter.
+**Relation:** Student (M) till Course (M). En student kan läsa flera kurser, och varje kurs har flera studenter.
 
-Implementering: Denna relation löses upp med hjälp av kopplingstabellen StudentEnrollment.
+**Implementering:** Denna relation löses upp med hjälp av kopplingstabellen StudentEnrollment.
 
-Motivering: Kopplingstabellen är absolut nödvändig. Den hanterar inte bara själva kopplingen, utan lagrar också data som är beroende av båda entiteterna, nämligen grade och completionDate. Den sammansatta primärnyckeln (studentId, courseCode) garanterar att varje registrering är unik.
+**Motivering:** Kopplingstabellen är absolut nödvändig. Den hanterar inte bara själva kopplingen, utan lagrar också data som är beroende av båda entiteterna, nämligen grade och completionDate. Den sammansatta primärnyckeln (studentId, courseCode) garanterar att varje registrering är unik.
 
 ## ⚖️ 4. Normalisering
 
@@ -81,13 +91,13 @@ Valet av datatyper är avgörande för att optimera lagring, prestanda och datai
 
 Här är motiveringen för de mest centrala valen:
 
-INT (Heltal)
+#### INT (Heltal)
 
 Exempel: Används för id-kolumner (t.ex. Student.id, Teacher.id) i kombination med AUTO_INCREMENT.
 
 Varför: Detta skapar en snabb, stabil och unik surrogatnyckel (ett löparnummer). Heltal är det mest effektiva sättet för databasen att göra sökningar och JOIN-operationer.
 
-VARCHAR (Textsträngar)
+#### VARCHAR (Textsträngar)
 
 Varför: Används för all textdata. VARCHAR (variabel längd) är mer lagringseffektivt än CHAR (fast längd) eftersom den bara tar upp plats för de tecken som faktiskt matas in.
 
@@ -95,13 +105,13 @@ Exempel: Längden anpassas efter behov: VARCHAR(100) för namn, VARCHAR(2) för 
 
 Specialfall: personNr (VARCHAR(13)) lagras som text. Detta är ett kritiskt val för att kunna inkludera bindestrecket (-) och förhindra att eventuella inledande nollor tas bort, vilket hade hänt om det lagrats som en siffra.
 
-DECIMAL (Exakta tal)
+#### DECIMAL (Exakta tal)
 
 Exempel: Används för credits (kurspoäng) som DECIMAL(4, 2).
 
-Varför: Till skillnad från FLOAT (flyttal), garanterar DECIMAL exakt precision. Det är nödvändigt för att värden som 7.50 ska lagras exakt så, och inte som 7.4999.... Det är standard för alla värden där exakthet är viktig, som poäng eller valuta.
+Varför: Till skillnad från **FLOAT** (flyttal), garanterar **DECIMAL** exakt precision. Det är nödvändigt för att värden som 7.50 ska lagras exakt så, och inte som 7.4999.... Det är standard för alla värden där exakthet är viktig, som poäng eller valuta.
 
-DATE (Datum)
+#### DATE (Datum)
 
 Exempel: Används för registeredDate.
 
@@ -113,11 +123,11 @@ Dataintegritet har säkerställts på databasnivå genom att tillämpa strikta b
 
 ### 🚫 6.1 Unikhetsbegränsningar (UNIQUE)
 
-Student.personNr: Garanterar att ingen student kan registreras med ett dubblerat personnummer.
+**Student.personNr:** Garanterar att ingen student kan registreras med ett dubblerat personnummer.
 
-Student.email: Garanterar att varje student har en unik kontaktadress.
+**Student.email:** Garanterar att varje student har en unik kontaktadress.
 
-Teacher.email: Garanterar att varje lärare har en unik kontaktadress.
+**Teacher.email:** Garanterar att varje lärare har en unik kontaktadress.
 
 ### ❗ 6.2 Inte-Null Begränsningar (NOT NULL)
 
@@ -127,11 +137,41 @@ Exempel: Student.firstName, Course.name, Teacher.department måste alltid ha ett
 
 ### ⛓️ 6.3 Främmande Nycklar (Foreign Keys – FK)
 
-Främmande nycklar (responsibleTeacherId, studentId, courseCode) används för att upprätthålla referensintegritet.
+Främmande nycklar (**responsibleTeacherId**, **studentId**, **courseCode**) används för att upprätthålla referensintegritet.
 
 Detta förhindrar att en kurs registreras med en responsibleTeacherId som inte existerar i Teacher-tabellen, och förhindrar att studentregistreringar kopplas till studenter eller kurser som inte finns.
 
 Detta skyddar mot "hängande referenser" (orphaned records) och är ett fundamentalt krav för en relationsdatabas.
+
+#### 6.3.1 ⛓️ Hantering av Relationer vid Radering (ON DELETE)
+
+För att upprätthålla referensintegritet (säkerställa att inga "hängande referenser" skapas) har jag använt två medvetna och olika strategier för ON DELETE i databasen:
+
+####  ON DELETE RESTRICT (Standardregeln) - Skydda Kärndata
+I de flesta relationer har jag använt standardbeteendet, som är ON DELETE RESTRICT (eller NO ACTION). Detta fungerar som ett viktigt skyddsnät.
+
+Relation: Teacher (1) -> Course (M)
+
+Relation: StudentStatus (1) -> Student (M)
+
+Motivering (Exempel): Om en användare försöker radera en lärare (t.ex. Anna Andersson) som fortfarande är listad som kursansvarig (responsibleTeacherId) för tre kurser, kommer databasen att blockera raderingen.
+
+Detta är avsiktligt. Det tvingar applikationen (eller administratören) att först vidta en åtgärd – antingen måste kurserna raderas eller, mer troligt, omallokeras till en ny lärare – innan den ursprungliga läraren kan tas bort. Samma logik gäller för StudentStatus: databasen förhindrar att statusen "Aktiv" raderas om studenter fortfarande använder den.
+
+Detta skyddar systemet från att hamna i ett korrupt tillstånd där kurser saknar ansvariga lärare.
+
+####  ON DELETE CASCADE - Automatisk Uppstädning
+I ett specifikt fall har jag medvetet valt ON DELETE CASCADE för att automatisera uppstädning av beroende data.
+
+Relation: Student (1) -> StudentEnrollment (M)
+
+Relation: Course (1) -> StudentEnrollment (M)
+
+Motivering (Exempel): Kopplingstabellen StudentEnrollment innehåller data (som betyg) som är helt meningslös utan sin "förälder".
+
+Om en Student raderas: Om student "Sara Svensson" (ID 1) tas bort från systemet, är hennes gamla kursregistreringar (t.ex. hennes betyg i 'DB101') inte längre relevanta. Tack vare ON DELETE CASCADE kommer databasen automatiskt att städa bort alla rader i StudentEnrollment som tillhörde "Sara Svensson".
+
+Om en Kurs raderas: Om kursen 'DB101' raderas (kanske lades ner), är alla registreringar för den kursen också irrelevanta. ON DELETE CASCADE raderar dem automatiskt.
 
 ## ⚡ 7. Indexering
 För att optimera prestandan vid sökningar har ett index skapats på kolumnen Student.email.

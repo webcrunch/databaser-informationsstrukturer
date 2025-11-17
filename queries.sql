@@ -7,7 +7,6 @@ USE Nexus_DB;
 
 -- 1. Skapa användare/Student (Populera databasen)
 -- Vi lägger till en ny student, "Kalle Karlsson". Måste inkludera statusId för att matcha schemat.
-
 INSERT INTO
     Student (
         firstName,
@@ -28,7 +27,6 @@ VALUES (
 
 -- 2. Uppdatera data (Modifera)
 -- Uppdatera Pelles e-postadress.
-
 UPDATE Student
 SET
     email = 'pelle.persson.ny@mail.com'
@@ -49,7 +47,6 @@ WHERE
 
 -- 4. Använder sig av SQL Funktioner såsom DATE
 -- Hitta alla studenter som registrerade sig i databasen efter ett specifikt datum (t.ex. 1:a november 2024).
-
 SELECT
     CONCAT(
         firstName,
@@ -67,7 +64,6 @@ ORDER BY registeredDate DESC;
 
 -- 5. Använder sig av SQL Funktioner såsom COUNT
 -- Räkna hur många studenter som är inskrivna i varje enskild kurs.
-
 SELECT courseCode, COUNT(studentId) AS AntalStudenter
 FROM StudentEnrollment
 GROUP BY
@@ -76,23 +72,20 @@ ORDER BY AntalStudenter DESC;
 
 -- 6. Fritext sökningar (LIKE)
 -- Hitta alla kurser vars namn innehåller ordet 'Databaser'.
-
 SELECT code, name FROM Course WHERE name LIKE '%Databaser%';
 
 -- 7. Frågor som använder LIMIT och OFFSET
 -- Visa de 3 senast registrerade studenterna (LIMIT 3) med start från den 2:a studenten i sorteringen (OFFSET 1).
-
 SELECT CONCAT(firstname, ' ', lastname) AS FUllName, registeredDate
 FROM Student
 ORDER BY registeredDate DESC
-LIMIT 3 -- tar bara tre resultat
+LIMIT 3 -- Tar bara tre resultat
 OFFSET
     1;
--- hoppar över den första och tar den andre,tredje och fjärde istället
+-- Hoppar över 1:a, tar 2:a, 3:e, 4:e
 
 -- 8. En JOIN som innefattar minst tre tabeller
 -- Visa namn på studenten, namnet på kursen, och den ansvariga lärarens namn för alla godkända inskrivningar.
-
 SELECT
     S.firstName AS Student_Förnamn,
     S.lastName AS Student_Efternamn,
@@ -108,7 +101,6 @@ WHERE
 
 -- 8b. En JOIN som innefattar minst tre tabeller (Med CONCAT)
 -- Samma fråga som 8 men med studentens för- och efternamn sammanfogade (konkatinerade).
-
 SELECT
     CONCAT(S.firstName, ' ', S.lastName) AS Studentens_Namn,
     C.name AS Kursnamn,
@@ -124,15 +116,13 @@ WHERE
 -- #####################################################################
 -- KRAV: VYER (Views)
 -- #####################################################################
+-- (Notera: Dessa vyer skapas i schema.sql, men detta visar hur de kan skapas)
 
 -- 9. Skapa en Förenklad Vy för SELECT-frågor
 -- Skapar en vy som enkelt visar studentens namn, kursnamn och betyg, samt studentens status.
-
 CREATE VIEW v_FullEnrollmentDetails AS
 SELECT
     CONCAT(S.firstname, ' ', S.lastName) AS StudentFullName,
-    -- S.firstName AS StudentFirstName,
-    -- S.lastName AS StudentLastName,
     St.statusName AS StudentStatus, -- StudentStatus inlagd
     C.name AS CourseName,
     SE.grade AS Grade,
@@ -143,11 +133,11 @@ FROM
     JOIN StudentStatus AS St ON S.statusId = St.id
     JOIN Course AS C ON SE.courseCode = C.code;
 
-SELECT * FROM v_FullEnrollmentDetails;
+-- Exempelanvändning:
+-- SELECT * FROM v_FullEnrollmentDetails;
 
 -- 10. Skapa en Rapportvy (Kursbeläggning/Topplista)
 -- Visar de kurser som har flest inskrivna studenter.
-
 CREATE VIEW v_TopCourses AS
 SELECT
     C.code AS CourseCode,
@@ -161,8 +151,8 @@ GROUP BY
     C.name
 ORDER BY EnrolledStudents DESC;
 
--- för att kunna hämta ut information kan man köra:
-SELECT * FROM v_TopCourses;
+-- Exempelanvändning:
+-- SELECT * FROM v_TopCourses;
 
 -- #####################################################################
 -- VG-KRAV & Avancerade Rapporter
@@ -170,7 +160,6 @@ SELECT * FROM v_TopCourses;
 
 -- 11. Rapport som använder HAVING (VG)
 -- Hitta namnet på de studenter som är inskrivna på mer än 30 högskolepoäng (hp) totalt.
-
 SELECT
     CONCAT(S.firstName, ' ', S.lastName) AS StudentFullName,
     SUM(C.credits) AS TotalCredits
@@ -208,9 +197,8 @@ GROUP BY
     C.credits
 ORDER BY C.credits DESC;
 
--- NYTT! 13. Avancerad fråga: Hitta studenter utan pågående inskrivningar
--- Använder LEFT JOIN för att hitta studenter som har status "Aktiv" (statusId=1) men ingen inskriven kurs utan betyg (dvs. de är i riskzonen för att vara inaktiva).
--- Hitta de studenter som inte matchade någon pågående kurs (NULL completionDate)
+-- 13. Avancerad fråga: Hitta studenter utan pågående inskrivningar
+-- Använder LEFT JOIN för att hitta studenter som har status "Aktiv" (statusId=1) men ingen inskriven kurs utan betyg.
 SELECT S.id, S.firstName, S.lastName, ST.statusName
 FROM
     Student AS S
@@ -220,36 +208,29 @@ FROM
 WHERE
     ST.statusName = 'Aktiv' -- Endast aktiva studenter
     AND SE.studentId IS NULL;
+-- Hitta de studenter som inte matchade någon pågående kurs
 
--- NYTT! 14. Avancerad fråga: Genomsnittligt betyg per kurs (Rapport för lärare)
--- Konverterar betygen (A=5, B=4, C=3, G/D=2, U=1) för att beräkna ett numeriskt snitt.
+-- 14. Avancerad fråga: Genomsnittligt betyg per kurs (Rapport för lärare)
+-- Konverterar betygen (A=5, B=4, C=3, G/D=2) för att beräkna ett numeriskt snitt.
 SELECT
-    CONCAT(
-        C.name,
-        ' ',
-        '(',
-        C.code,
-        ')',
-        ' '
-    ) AS KursInformation,
-    -- C.code,
-    -- C.name AS Kursnamn,
+    CONCAT(C.name, ' (', C.code, ')') AS KursInformation,
     CONCAT(T.firstName, ' ', T.lastName) AS Ansvarig_Lärare,
-    -- Beräkna medelbetyget
-    ROUND(
-        AVG(
-            CASE
-                WHEN SE.grade = 'A' THEN 5
-                WHEN SE.grade = 'B' THEN 4
-                WHEN SE.grade = 'C' THEN 3
-                WHEN SE.grade = 'G'
-                OR SE.grade = 'D' THEN 2
-                WHEN SE.grade = 'U' THEN 1
-                ELSE NULL
-            END
-        ),
-        2
-    ) AS Genomsnittligt_Betyg
+
+-- Beräkna medelbetyget
+ROUND(
+    AVG(
+        CASE
+            WHEN SE.grade = 'A' THEN 5
+            WHEN SE.grade = 'B' THEN 4
+            WHEN SE.grade = 'C' THEN 3
+            WHEN SE.grade = 'G'
+            OR SE.grade = 'D' THEN 2
+            -- 'U' (Underkänd) räknas inte med i snittet
+            ELSE NULL
+        END
+    ),
+    2
+) AS Genomsnittligt_Betyg
 FROM
     StudentEnrollment AS SE
     JOIN Course AS C ON SE.courseCode = C.code
@@ -258,14 +239,14 @@ WHERE
     SE.grade IS NOT NULL
     AND SE.grade != 'U' -- Exkludera icke-godkända/Underkända för ett mer meningsfullt G-snitt
 GROUP BY
-    C.code,
+    C.code, -- Nödvändig eftersom vi aggregerar per kurs
     C.name,
+    T.firstName,
     T.lastName
 ORDER BY Genomsnittligt_Betyg DESC;
 
--- NYTT! 15. Avancerad fråga: De bästa studenterna i en specifik kurs (Använder Subquery)
+-- 15. Avancerad fråga: De bästa studenterna i en specifik kurs (Använder Subquery)
 -- Hitta studenterna vars betyg är högre än genomsnittet för kursen 'DB101'.
-
 SELECT CONCAT(S.firstName, ' ', S.lastName) AS Name, SE.grade AS DB101_Betyg
 FROM
     StudentEnrollment AS SE
@@ -301,8 +282,11 @@ WHERE
             AND grade != 'U'
     );
 
--- 16. Stored Procedure (t.ex. registrera order/registrering) (VG)
--- En procedur som enkelt registrerar en student på en ny kurs.
+-- #####################################################################
+-- 16. Stored Procedures (VG)
+-- #####################################################################
+
+-- Procedur 1: Registrera en student på en kurs (sätter pågående status)
 DELIMITER /
 /
 
@@ -321,13 +305,12 @@ END
 
 DELIMITER;
 
--- (Valfritt: Anropa proceduren för att testa den)
-CALL RegisterStudentToCourse (10, 'IT400');
--- lägger till studentid 10 -> Johan Jansson till cource IT400 utan grade och completionDate
+-- Exempelanvändning:
+-- CALL RegisterStudentToCourse (10, 'IT400'); -- lägger till studentid 10 -> Johan Jansson till cource IT400
 
--- 16. Stored Procedure (t.ex. registrera order/registrering) (VG)
--- En procedur som enkelt registrerar en student på en ny kurs.
-DELIMITER / /
+-- Procedur 2: Ge betyg/slutföra en kurs för en student
+DELIMITER /
+/
 
 CREATE PROCEDURE GraduateStudentToCourse (
     IN p_studentId INT,
@@ -336,15 +319,19 @@ CREATE PROCEDURE GraduateStudentToCourse (
     IN p_completionDate DATE
 )
 BEGIN
-    -- Försöker lägga till en rad i StudentEnrollment-tabellen
-    -- grade och completionDate är NULL initialt
+    -- Uppdaterar en befintlig registrering med betyg och datum
     UPDATE StudentEnrollment 
-    SET grade = p_courseGrade, completionDate = p_completionDate
-    WHERE studentId = p_studentId AND courseCode = p_courseCode;
+    SET 
+        grade = p_courseGrade, 
+        completionDate = p_completionDate
+    WHERE 
+        studentId = p_studentId 
+        AND courseCode = p_courseCode;
 END
-//
+/
+/
 
 DELIMITER;
 
--- (Valfritt: Anropa proceduren för att testa den)
-CALL GraduateStudentToCourse ( 10, 'IT400', 'B', '2025-11-10' );
+-- Exempelanvändning:
+-- CALL GraduateStudentToCourse (10, 'IT400', 'B', '2025-11-10');

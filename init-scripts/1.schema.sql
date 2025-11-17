@@ -1,14 +1,20 @@
--- 1a. Skapa tabellen StudentStatus
+-- #####################################################################
+-- SCHEMADEFINITION: Skolplattform (Nexus DB)
+-- Beskrivning: Skapar alla nödvändiga tabeller, index och vyer.
+-- #####################################################################
 
 USE Nexus_DB;
 
+-- 1. Skapa tabell: StudentStatus (Lookup-tabell)
+-- Används som referens för studenters aktuella status.
 CREATE TABLE IF NOT EXISTS StudentStatus (
     id INT NOT NULL AUTO_INCREMENT,
     statusName VARCHAR(50) NOT NULL UNIQUE,
     PRIMARY KEY (id)
 );
 
--- 1. Skapa tabellen Student
+-- 2. Skapa tabell: Student
+-- Huvudtabell för studentinformation.
 CREATE TABLE IF NOT EXISTS Student (
     id INT NOT NULL AUTO_INCREMENT,
     firstName VARCHAR(100) NOT NULL,
@@ -21,7 +27,8 @@ CREATE TABLE IF NOT EXISTS Student (
     FOREIGN KEY (statusId) REFERENCES StudentStatus (id)
 );
 
--- 2. Skapa tabellen Teacher
+-- 3. Skapa tabell: Teacher
+-- Huvudtabell för lärarinformation.
 CREATE TABLE IF NOT EXISTS Teacher (
     id INT NOT NULL AUTO_INCREMENT,
     firstName VARCHAR(100) NOT NULL,
@@ -31,7 +38,8 @@ CREATE TABLE IF NOT EXISTS Teacher (
     PRIMARY KEY (id)
 );
 
--- 3. Skapa tabellen Course
+-- 4. Skapa tabell: Course
+-- Huvudtabell för kursinformation.
 CREATE TABLE IF NOT EXISTS Course (
     code VARCHAR(10) NOT NULL,
     name VARCHAR(255) NOT NULL,
@@ -41,52 +49,53 @@ CREATE TABLE IF NOT EXISTS Course (
     FOREIGN KEY (responsibleTeacherId) REFERENCES Teacher (id)
 );
 
--- 4. Skapa tabellen StudentEnrollment (Kopplingstabellen)
+-- 5. Skapa tabell: StudentEnrollment (Kopplingstabell)
+-- Hanterar M:M-relationen mellan Student och Course (lagrar inskrivning, betyg, etc.).
+
+
 CREATE TABLE IF NOT EXISTS StudentEnrollment (
-    studentId INT NOT NULL,
-    courseCode VARCHAR(10) NOT NULL,
-    grade VARCHAR(2),
-    completionDate DATE,
+    studentId       INT             NOT NULL,
+    courseCode      VARCHAR(10)     NOT NULL,
+    grade           VARCHAR(2),     -- T.ex. 'A', 'B', 'U', 'G'
+    completionDate  DATE,
+    
     PRIMARY KEY (studentId, courseCode),
-    FOREIGN KEY (studentId) REFERENCES Student (id) ON DELETE CASCADE,
-    FOREIGN KEY (courseCode) REFERENCES Course (code) ON DELETE CASCADE
+
+-- ON DELETE CASCADE: Radera inskrivning om student raderas
+FOREIGN KEY (studentId) REFERENCES Student (id) ON DELETE CASCADE,
+
+-- ON DELETE CASCADE: Radera inskrivning om kurs raderas
+FOREIGN KEY (courseCode) 
+        REFERENCES Course (code) 
+        ON DELETE CASCADE
 );
 
---
 -- #####################################################################
--- 5. SKAPA INDEX (NYTT AVSNITT)
+-- 6. SKAPA INDEX
 -- #####################################################################
---
--- Krav: Minst ett index på en kolumn som ofta söks på.
--- Motivering: Foreign Key-kolumner används i nästan alla JOINs
--- och många WHERE-satser. Att indexera 'Student.statusId'
--- optimerar prestandan dramatiskt när man filtrerar studenter
--- baserat på deras status (t.ex. "visa alla aktiva studenter").
 
+-- Motivering: statusId är en Foreign Key som används i många sökningar (WHERE-satser)
+-- och JOINs för att filtrera studenter baserat på deras status.
 CREATE INDEX idx_student_statusId ON Student (statusId);
 
---
 -- #####################################################################
--- 6. SKAPA VYER (VIEWS)
+-- 7. SKAPA VYER (VIEWS)
 -- #####################################################################
---
--- Krav: Skapa minst två vyer.
 
--- 6a. v_StudentStatus: Visar all studentdata inklusive det läsbara statusnamnet.
-DROP VIEW IF EXISTS StudentStatusView;
--- Tar bort det gamla namnet
+-- Raderar eventuella gamla vyer för att tillåta skriptet att köras flera gånger
+DROP VIEW IF EXISTS v_StudentEnrollmentOverview;
+
+DROP VIEW IF EXISTS v_CourseTeachers;
+
 DROP VIEW IF EXISTS v_StudentStatus;
 
+-- 7a. v_StudentStatus: Visar all studentdata inklusive det läsbara statusnamnet.
 CREATE VIEW v_StudentStatus AS
 SELECT S.id, S.firstName, S.lastName, S.personNr, S.email, S.registeredDate, SS.statusName, S.statusId
 FROM Student S
     JOIN StudentStatus SS ON S.statusId = SS.id;
 
--- 6b. v_CourseTeachers: Visar alla kurser med den ansvariga lärarens fullständiga namn.
-DROP VIEW IF EXISTS CourseTeacherView;
--- Tar bort det gamla namnet
-DROP VIEW IF EXISTS v_CourseTeachers;
-
+-- 7b. v_CourseTeachers: Visar alla kurser med den ansvariga lärarens fullständiga namn.
 CREATE VIEW v_CourseTeachers AS
 SELECT
     C.code,
@@ -99,11 +108,7 @@ SELECT
 FROM Course C
     JOIN Teacher T ON C.responsibleTeacherId = T.id;
 
--- 6c. v_StudentEnrollmentOverview: En detaljerad rapportvy över alla registreringar.
-DROP VIEW IF EXISTS StudentEnrollmentOverview;
-
-DROP VIEW IF EXISTS v_StudentEnrollmentOverview;
-
+-- 7c. v_StudentEnrollmentOverview: En detaljerad rapportvy över alla registreringar.
 CREATE VIEW v_StudentEnrollmentOverview AS
 SELECT
     SE.studentId,
