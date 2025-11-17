@@ -2,10 +2,10 @@ from flask import Flask, jsonify, request, g, has_request_context
 from flask_restx import Api, Resource, fields, reqparse
 import os
 import mysql.connector
-import time
-from datetime import datetime, date  # Importera date här
-import json  # Importera json för den anpassade enkodern
+from datetime import datetime, date
+import json
 from contextlib import contextmanager
+from decimal import Decimal  # Lägg till Decimal för Course credits
 
 # ----------------------------------------------------
 # 1. Konfiguration
@@ -14,7 +14,6 @@ from contextlib import contextmanager
 app = Flask(__name__)
 
 # Databaskonfiguration läses från miljövariabler (som i docker-compose.yml)
-# Använder standardvärden för lokal utveckling om variablerna saknas.
 app.config["MYSQL_DATABASE_USER"] = os.environ.get("MYSQL_DATABASE_USER", "user")
 app.config["MYSQL_DATABASE_PASSWORD"] = os.environ.get(
     "MYSQL_DATABASE_PASSWORD", "password"
@@ -37,6 +36,9 @@ student_ns = api.namespace("students", description="Studenthantering")
 teacher_ns = api.namespace("teachers", description="Lärarhantering")
 course_ns = api.namespace("courses", description="Kurshantering")
 enrollment_ns = api.namespace("enrollments", description="Registreringshantering")
+stats_ns = api.namespace(
+    "stats", description="Statistik och komplexa hämtningar"
+)  # NYTT NS
 
 
 # ----------------------------------------------------
@@ -48,12 +50,11 @@ enrollment_ns = api.namespace("enrollments", description="Registreringshantering
 def cursor_manager(db):
     """
     Hanterar en databaspekare (cursor) med automatisk stängning.
-    Om du vill ha resultaten som ordlistor (dictionary) måste du
-    anropa: with cursor_manager(db) as cursor: ...
+    Returnerar resultat som ordlistor (dictionary).
     """
     cursor = None
     try:
-        # HÄR ÄR KORRIGERINGEN: dictionary=True används vid cursor-skapande!
+        # dictionary=True används vid cursor-skapande för att få resultat som dicts
         cursor = db.cursor(dictionary=True)
         yield cursor
     finally:
@@ -63,15 +64,12 @@ def cursor_manager(db):
 
 def get_db():
     """Öppnar en ny databasanslutning om den inte redan finns för den här begäran."""
-    # Använd has_request_context för att kontrollera om vi är i en begäran,
-    # annars kan vi inte använda 'g'. Detta är viktigt för Flask-setup.
     if not has_request_context():
-        return None  # Eller hantera på ett annat sätt för CLI/tester
+        # Kan inte använda 'g' utanför en request context
+        return None
 
     if "_database" not in g:
-        # FÖRBÄTTRING: Lägg till try/except-block för att hantera anslutningsfel
         try:
-            # HÄR ÄR KORRIGERINGEN: Argumentet 'dictionary' är borttaget härifrån.
             g._database = mysql.connector.connect(
                 user=app.config["MYSQL_DATABASE_USER"],
                 password=app.config["MYSQL_DATABASE_PASSWORD"],
@@ -81,7 +79,6 @@ def get_db():
             print("Database connection established.")
         except mysql.connector.Error as err:
             print(f"Database connection failed: {err}")
-            # Vi returnerar None vid fel, och API-metoderna hanterar detta.
             return None
         except Exception as e:
             print(f"An unexpected error occurred during connection: {e}")
@@ -102,29 +99,7 @@ def close_db(exception):
 # 3. Modeller för indata/utdata (Marshalling)
 # ----------------------------------------------------
 
-# (Modellerna är oförändrade men inkluderas för helhet)
-
-student_model = api.model(
-    "Student",
-    {
-        "id": fields.Integer(readonly=True, description="Student ID"),
-        "firstName": fields.String(required=True, description="Förnamn"),
-        "lastName": fields.String(required=True, description="Efternamn"),
-        "personNr": fields.String(
-            required=True, description="Personnummer (ÅÅMMDD-XXXX)"
-        ),
-        "email": fields.String(required=True, description="E-postadress"),
-        "registeredDate": fields.Date(description="Registreringsdatum"),
-    },
-)
-
-student_input_parser = reqparse.RequestParser()
-student_input_parser.add_argument("firstName", type=str, required=True, location="json")
-student_input_parser.add_argument("lastName", type=str, required=True, location="json")
-student_input_parser.add_argument("personNr", type=str, required=True, location="json")
-student_input_parser.add_argument("email", type=str, required=True, location="json")
-
-
+# --- Teacher Model ---
 teacher_model = api.model(
     "Teacher",
     {
@@ -144,7 +119,36 @@ teacher_input_parser.add_argument(
     "department", type=str, required=True, location="json"
 )
 
+# --- Student Model ---
+student_model = api.model(
+    "Student",
+    {
+        "id": fields.Integer(readonly=True, description="Student ID"),
+        "firstName": fields.String(required=True, description="Förnamn"),
+        "lastName": fields.String(required=True, description="Efternamn"),
+        "personNr": fields.String(
+            required=True, description="Personnummer (ÅÅMMDD-XXXX)"
+        ),
+        "email": fields.String(required=True, description="E-postadress"),
+        "registeredDate": fields.Date(description="Registreringsdatum"),
+        "statusId": fields.Integer(
+            description="Status-ID (FK till StudentStatus)"
+        ),  # Lade till statusId
+    },
+)
 
+student_input_parser = reqparse.RequestParser()
+student_input_parser.add_argument("firstName", type=str, required=True, location="json")
+student_input_parser.add_argument("lastName", type=str, required=True, location="json")
+student_input_parser.add_argument("personNr", type=str, required=True, location="json")
+student_input_parser.add_argument("email", type=str, required=True, location="json")
+# Notera: statusId är default 1 (för aktiv), men bör kunna skickas med.
+student_input_parser.add_argument(
+    "statusId", type=int, required=False, location="json", default=1
+)
+
+
+# --- Course Model ---
 course_model = api.model(
     "Course",
     {
@@ -166,6 +170,7 @@ course_input_parser.add_argument(
 )
 
 
+# --- Enrollment Model ---
 enrollment_model = api.model(
     "StudentEnrollment",
     {
@@ -180,6 +185,35 @@ enrollment_input_parser = reqparse.RequestParser()
 enrollment_input_parser.add_argument("grade", type=str, required=False, location="json")
 enrollment_input_parser.add_argument(
     "completionDate", type=str, required=False, location="json"
+)
+
+# --- NYA Modeller för Views/Procedures ---
+
+# Student Transcript Model (för Stored Procedure)
+transcript_model = api.model(
+    "StudentTranscript",
+    {
+        "courseCode": fields.String(description="Kurskod"),
+        "courseName": fields.String(description="Kursnamn"),
+        "credits": fields.Float(description="Högskolepoäng"),
+        "grade": fields.String(description="Betyg"),
+        "completionDate": fields.Date(description="Slutförandedatum"),
+        "responsibleTeacher": fields.String(description="Ansvarig lärare"),
+    },
+)
+
+# Enrollment View Model (för StudentEnrollmentView)
+enrollment_view_model = api.model(
+    "EnrollmentView",
+    {
+        "studentId": fields.Integer(description="Student-ID"),
+        "studentFirstName": fields.String(description="Studentens förnamn"),
+        "studentLastName": fields.String(description="Studentens efternamn"),
+        "courseCode": fields.String(description="Kurskod"),
+        "courseName": fields.String(description="Kursnamn"),
+        "grade": fields.String(description="Betyg"),
+        "completionDate": fields.Date(description="Slutförandedatum"),
+    },
 )
 
 
@@ -202,16 +236,13 @@ class StudentList(Resource):
             student_ns.abort(503, "Kunde inte ansluta till databasen")
 
         try:
-            # Korrigerad cursor-skapande
             with cursor_manager(db) as cursor:
                 cursor.execute("SELECT * FROM Student")
                 students = cursor.fetchall()
                 return students
         except mysql.connector.Error as err:
             print(f"Database error: {err}")
-            student_ns.abort(
-                500, f"Fel vid hämtning från databasen: {err}"
-            )  # Abort hanteras av Flask-RESTX
+            student_ns.abort(500, f"Fel vid hämtning från databasen: {err}")
 
     @student_ns.doc("create_student")
     @student_ns.expect(student_input_parser)
@@ -225,10 +256,10 @@ class StudentList(Resource):
 
         try:
             with cursor_manager(db) as cursor:
-                # Använd CURDATE() i SQL för att få dagens datum
+                # Lade till statusId i insert-satsen
                 query = """
-                    INSERT INTO Student (firstName, lastName, personNr, email, registeredDate)
-                    VALUES (%s, %s, %s, %s, CURDATE())
+                    INSERT INTO Student (firstName, lastName, personNr, email, registeredDate, statusId)
+                    VALUES (%s, %s, %s, %s, CURDATE(), %s)
                 """
                 cursor.execute(
                     query,
@@ -237,6 +268,7 @@ class StudentList(Resource):
                         args["lastName"],
                         args["personNr"],
                         args["email"],
+                        args["statusId"],  # Lade till statusId här
                     ),
                 )
                 db.commit()
@@ -250,7 +282,7 @@ class StudentList(Resource):
             db.rollback()
             student_ns.abort(
                 409,
-                f"Student kunde inte skapas: Personnummer eller E-post är redan registrerad. ({err})",
+                f"Student kunde inte skapas: Personnummer, E-post är redan registrerad, eller Ogiltigt Status-ID. ({err})",
             )
         except mysql.connector.Error as err:
             db.rollback()
@@ -269,7 +301,6 @@ class Student(Resource):
             student_ns.abort(503, "Kunde inte ansluta till databasen")
 
         try:
-            # Korrigerad cursor-skapande
             with cursor_manager(db) as cursor:
                 cursor.execute("SELECT * FROM Student WHERE id = %s", (student_id,))
                 student = cursor.fetchone()
@@ -289,18 +320,23 @@ class Student(Resource):
         if not db:
             student_ns.abort(503, "Kunde inte ansluta till databasen")
 
-        # Bygg upp uppdateringsfrågan dynamiskt
+        # Bygg upp uppdateringsfrågan dynamiskt (Inkluderar statusId)
         set_clauses = []
         params = []
+        # Exkludera default 1 för statusId om det inte skickas
+        # Men om det skickas ska det inkluderas
         for key, value in args.items():
-            if value is not None:
+            if value is not None and (
+                key != "statusId"
+                or (key == "statusId" and request.json.get("statusId") is not None)
+            ):
                 set_clauses.append(f"{key} = %s")
                 params.append(value)
 
         if not set_clauses:
             student_ns.abort(400, "Ingen data att uppdatera angiven.")
 
-        params.append(student_id)  # Lägg till ID för WHERE-satsen
+        params.append(student_id)
 
         try:
             with cursor_manager(db) as cursor:
@@ -312,7 +348,6 @@ class Student(Resource):
                 if rows_affected == 0:
                     student_ns.abort(404, f"Student med ID {student_id} hittades inte.")
 
-                # Hämta den uppdaterade posten för att returnera den
                 cursor.execute("SELECT * FROM Student WHERE id = %s", (student_id,))
                 updated_student = cursor.fetchone()
                 return updated_student
@@ -320,7 +355,7 @@ class Student(Resource):
             db.rollback()
             student_ns.abort(
                 409,
-                f"Uppdateringen misslyckades: Personnummer eller E-post är redan registrerad. ({err})",
+                f"Uppdateringen misslyckades: Personnummer, E-post, eller Status-ID är ogiltigt. ({err})",
             )
         except mysql.connector.Error as err:
             db.rollback()
@@ -336,7 +371,7 @@ class Student(Resource):
 
         try:
             with cursor_manager(db) as cursor:
-                # Kolla först om studenten är inskriven på någon kurs (Foreign Key-begränsning)
+                # Kolla om studenten är inskriven på någon kurs (Foreign Key-begränsning)
                 cursor.execute(
                     "SELECT 1 FROM StudentEnrollment WHERE studentId = %s LIMIT 1",
                     (student_id,),
@@ -344,7 +379,7 @@ class Student(Resource):
                 if cursor.fetchone():
                     student_ns.abort(
                         409,
-                        f"Student {student_id} är inskriven på en eller flera kurser och kan inte raderas.",
+                        f"Student {student_id} är inskriven på en eller flera kurser och kan inte raderas (FK-konflikt).",
                     )
 
                 cursor.execute("DELETE FROM Student WHERE id = %s", (student_id,))
@@ -361,6 +396,7 @@ class Student(Resource):
 
 
 # --- Lärar Resurser ---
+# (Inga ändringar gjorda här. Denna kod är korrekt för Teacher-tabellen.)
 
 
 @teacher_ns.route("/")
@@ -373,7 +409,6 @@ class TeacherList(Resource):
         if not db:
             teacher_ns.abort(503, "Kunde inte ansluta till databasen")
         try:
-            # Korrigerad cursor-skapande
             with cursor_manager(db) as cursor:
                 cursor.execute("SELECT * FROM Teacher")
                 teachers = cursor.fetchall()
@@ -433,7 +468,6 @@ class Teacher(Resource):
         if not db:
             teacher_ns.abort(503, "Kunde inte ansluta till databasen")
         try:
-            # Korrigerad cursor-skapande
             with cursor_manager(db) as cursor:
                 cursor.execute("SELECT * FROM Teacher WHERE id = %s", (teacher_id,))
                 teacher = cursor.fetchone()
@@ -445,6 +479,7 @@ class Teacher(Resource):
 
 
 # --- Kurs Resurser ---
+# (Inga ändringar gjorda här. Denna kod är korrekt för Course-tabellen.)
 
 
 @course_ns.route("/")
@@ -457,7 +492,6 @@ class CourseList(Resource):
         if not db:
             course_ns.abort(503, "Kunde inte ansluta till databasen")
         try:
-            # Korrigerad cursor-skapande
             with cursor_manager(db) as cursor:
                 cursor.execute("SELECT * FROM Course")
                 courses = cursor.fetchall()
@@ -475,11 +509,11 @@ class CourseList(Resource):
         if not db:
             course_ns.abort(503, "Kunde inte ansluta till databasen")
 
-        # Försök att konvertera 'credits' till Decimal, även om fältet är float
-        # i modellen, är det bäst att skicka det som ett numeriskt värde.
         try:
-            credits_val = float(args["credits"])
-        except ValueError:
+            credits_val = Decimal(
+                args["credits"]
+            )  # Använder Decimal för att matcha DB-datatypen
+        except (ValueError, TypeError):
             course_ns.abort(400, "Credits måste vara ett giltigt numeriskt värde.")
 
         try:
@@ -507,7 +541,7 @@ class CourseList(Resource):
             # Hantera fel som t.ex. att kurskoden redan finns (PK) eller att lärarens ID inte finns (FK)
             course_ns.abort(
                 409,
-                f"Kurs kunde inte skapas: Kurskod finns eller Ogiltigt Lärar-ID. ({err})",
+                f"Kurs kunde inte skapas: Kurskod finns, Ogiltigt Lärar-ID, eller Felaktig Datatyp. ({err})",
             )
         except mysql.connector.Error as err:
             db.rollback()
@@ -525,7 +559,6 @@ class Course(Resource):
         if not db:
             course_ns.abort(503, "Kunde inte ansluta till databasen")
         try:
-            # Korrigerad cursor-skapande
             with cursor_manager(db) as cursor:
                 cursor.execute("SELECT * FROM Course WHERE code = %s", (course_code,))
                 course = cursor.fetchone()
@@ -537,6 +570,7 @@ class Course(Resource):
 
 
 # --- Registrering Resurser (StudentEnrollment) ---
+# (Inga ändringar gjorda här. Denna kod är korrekt för StudentEnrollment.)
 
 
 @enrollment_ns.route("/")
@@ -549,7 +583,6 @@ class EnrollmentList(Resource):
         if not db:
             enrollment_ns.abort(503, "Kunde inte ansluta till databasen")
         try:
-            # Korrigerad cursor-skapande
             with cursor_manager(db) as cursor:
                 cursor.execute("SELECT * FROM StudentEnrollment")
                 enrollments = cursor.fetchall()
@@ -557,7 +590,6 @@ class EnrollmentList(Resource):
         except mysql.connector.Error as err:
             enrollment_ns.abort(500, f"Fel vid hämtning från databasen: {err}")
 
-    # POST-metod för att skapa en ny registrering (inte specificerad i ursprunglig kod, men användbar)
     @enrollment_ns.doc("create_enrollment")
     @enrollment_ns.expect(
         enrollment_ns.model(
@@ -590,7 +622,6 @@ class EnrollmentList(Resource):
                     INSERT INTO StudentEnrollment (studentId, courseCode, grade, completionDate)
                     VALUES (%s, %s, %s, %s)
                 """
-                # Konvertera completion_date till datetime-objekt om det finns
                 date_obj = (
                     datetime.strptime(completion_date, "%Y-%m-%d").date()
                     if completion_date
@@ -600,7 +631,6 @@ class EnrollmentList(Resource):
                 cursor.execute(query, (student_id, course_code, grade, date_obj))
                 db.commit()
 
-                # Hämta den nya registreringen för respons
                 cursor.execute(
                     "SELECT * FROM StudentEnrollment WHERE studentId = %s AND courseCode = %s",
                     (student_id, course_code),
@@ -612,7 +642,7 @@ class EnrollmentList(Resource):
             db.rollback()
             enrollment_ns.abort(
                 409,
-                f"Registrering misslyckades: Studenten är redan registrerad eller Ogiltigt Student-/Kurs-ID. ({err})",
+                f"Registrering misslyckades: Studenten är redan registrerad eller Ogiltigt Student-/Kurs-ID (FK-fel). ({err})",
             )
         except ValueError:
             db.rollback()
@@ -637,7 +667,6 @@ class Enrollment(Resource):
             enrollment_ns.abort(503, "Kunde inte ansluta till databasen")
 
         try:
-            # Korrigerad cursor-skapande
             with cursor_manager(db) as cursor:
                 cursor.execute(
                     "SELECT * FROM StudentEnrollment WHERE studentId = %s AND courseCode = %s",
@@ -677,7 +706,6 @@ class Enrollment(Resource):
 
         if completion_date_str is not None:
             try:
-                # Konvertera sträng till date-objekt
                 completion_date_obj = datetime.strptime(
                     completion_date_str, "%Y-%m-%d"
                 ).date()
@@ -693,7 +721,6 @@ class Enrollment(Resource):
                 400, "Ingen data (grade eller completionDate) angiven för uppdatering."
             )
 
-        # Lägg till WHERE-satserna i slutet av params
         params.extend([student_id, course_code])
 
         try:
@@ -709,7 +736,6 @@ class Enrollment(Resource):
                         f"Registrering för student {student_id} på kurs {course_code} hittades inte.",
                     )
 
-                # Hämta den uppdaterade registreringen för respons
                 cursor.execute(
                     "SELECT * FROM StudentEnrollment WHERE studentId = %s AND courseCode = %s",
                     (student_id, course_code),
@@ -750,19 +776,81 @@ class Enrollment(Resource):
 
 
 # ----------------------------------------------------
+# 4.1 NYA Resurser för Statistik och Views
+# ----------------------------------------------------
+
+
+@stats_ns.route("/enrollment_view")
+class EnrollmentViewList(Resource):
+    @stats_ns.doc("list_detailed_enrollments")
+    @stats_ns.marshal_list_with(enrollment_view_model)
+    def get(self):
+        """Returnerar en detaljerad lista över alla registreringar från en VIEW."""
+        db = get_db()
+        if not db:
+            stats_ns.abort(503, "Kunde inte ansluta till databasen")
+        try:
+            with cursor_manager(db) as cursor:
+                # Använd den skapade VIEW:en
+                cursor.execute("SELECT * FROM v_StudentEnrollmentOverview")
+                data = cursor.fetchall()
+                return data
+        except mysql.connector.Error as err:
+            stats_ns.abort(500, f"Fel vid hämtning från databasen: {err}")
+
+
+@stats_ns.route("/transcript/<int:student_id>")
+@stats_ns.param("student_id", "Studentens ID för utdraget")
+class StudentTranscript(Resource):
+    @stats_ns.doc("get_student_transcript")
+    @stats_ns.marshal_list_with(transcript_model)
+    def get(self, student_id):
+        """Returnerar studentens kompletta kursutdrag (Transcript) via en Stored Procedure."""
+        db = get_db()
+        if not db:
+            stats_ns.abort(503, "Kunde inte ansluta till databasen")
+
+        # Kontrollera om studenten existerar innan vi anropar proceduren (valfritt men bra)
+        try:
+            with cursor_manager(db) as cursor:
+                cursor.execute("SELECT 1 FROM Student WHERE id = %s", (student_id,))
+                if not cursor.fetchone():
+                    stats_ns.abort(404, f"Student med ID {student_id} hittades inte.")
+        except mysql.connector.Error as err:
+            stats_ns.abort(500, f"Fel vid förkontroll av student: {err}")
+
+        try:
+            with cursor_manager(db) as cursor:
+                # Anropa Stored Procedure (PS)
+                cursor.callproc("GetStudentTranscript", [student_id])
+
+                # Hämta resultatuppsättningen (ResultSet)
+                results = []
+                for result in cursor.stored_results():
+                    # Vi använder fetchall() för att hämta alla rader från resultatet
+                    results.extend(result.fetchall())
+
+                return results
+
+        except mysql.connector.Error as err:
+            stats_ns.abort(500, f"Fel vid anrop av Stored Procedure: {err}")
+
+
+# ----------------------------------------------------
 # 5. Global JSON Encoder
 # ----------------------------------------------------
 
 
 # Anpassad JSON-enkoder för att hantera date/datetime-objekt
 class CustomJSONEncoder(json.JSONEncoder):
-    """Konverterar date och datetime objekt till ISO 8601 strängar."""
+    """Konverterar date, datetime och Decimal objekt till strängar."""
 
     def default(self, obj):
         if isinstance(obj, (date, datetime)):
             # MySQL-anslutningen returnerar standard Python date/datetime objekt.
-            # Vi konverterar dessa till en ISO-formatsträng som JSON kan hantera.
             return obj.isoformat()
+        if isinstance(obj, Decimal):
+            return float(obj)  # Konvertera Decimal till float för JSON-överföring
         # Låt basklassen (json.JSONEncoder) hantera andra typer
         return json.JSONEncoder.default(self, obj)
 
@@ -776,6 +864,4 @@ app.json_encoder = CustomJSONEncoder
 # ----------------------------------------------------
 
 if __name__ == "__main__":
-    # Körs endast om filen startas direkt (t.ex. python backend.py)
-    # I en produktionsmiljö (som med Gunicorn eller Docker) kommer detta block inte att köras.
     app.run(debug=True, host="0.0.0.0", port=5000)

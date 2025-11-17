@@ -1,6 +1,8 @@
 -- Steg 0: Säkerställ att tabellerna är tomma för att kunna köra skriptet flera gånger
--- Detta kräver att du har kört schema.sql (den uppdaterade versionen) först.
+-- Detta kräver att du har kört schema.sql först.
 SET FOREIGN_KEY_CHECKS = 0;
+
+USE Nexus_DB;
 
 TRUNCATE TABLE `StudentEnrollment`;
 
@@ -15,13 +17,13 @@ TRUNCATE TABLE `StudentStatus`;
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- 1. DATA FÖR STUDENTSTATUS (Måste köras först)
+-- 1. DATA FÖR STUDENTSTATUS (Måste köras först)
 INSERT INTO
     `StudentStatus` (`id`, `statusName`)
 VALUES (1, 'Aktiv'),
     (2, 'Examen'),
     (3, 'Utskriven'),
     (4, 'Tjänstledig');
-
 -- 2. DATA FÖR TEACHER (Lärare)
 -- Utökad lista med fler lärare (ID 1 till 5).
 INSERT INTO
