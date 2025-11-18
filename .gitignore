@@ -1,15 +1,48 @@
-Operativsystemspecifika filer
+# ------------------------------------
+# 1. Operativsystemspecifika filer
+# ------------------------------------
 .DS_Store
 Thumbs.db
 desktop.ini
 
-Byggresultat och beroenden
-/node_modules
+# ------------------------------------
+# 2. Byggresultat och Python-specifika filer
+# ------------------------------------
+# Python-miljöer
 /venv/
 /pycache/
 *.pyc
+
+# Allmänna loggfiler
 *.log
 
-Miljöfiler
+# ------------------------------------
+# 3. Node/Frontend (om det används)
+# ------------------------------------
+/node_modules
+
+# ------------------------------------
+# 4. Miljöfiler
+# ------------------------------------
 .env
 .local
+
+# ------------------------------------
+# 5. Docker & Databasvolymer (NYTT och befintligt)
+# ------------------------------------
+# Ignorera alla volymkataloger som monteras in i containrarna
+/postgres_data
+/mysql_scratch_data
+/mysql_nexus_data
+/mongo_data
+/redis_data
+/arangodb_data
+/influxdb_data
+/grafana_data
+
+# Neo4j & DuckDB delar denna katalog
+# Ignorerar: Neo4j data, DuckDB filer (my_database.duckdb)
+/data/ 
+/logs/          # Neo4j
+/import/        # Neo4j
+/plugins/       # Neo4j
