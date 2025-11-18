@@ -99,8 +99,9 @@ Varför: Detta skapar en snabb, stabil och unik surrogatnyckel (ett löparnummer
 
 #### VARCHAR (Textsträngar)
 
-Varför: Används för all textdata. VARCHAR (variabel längd) är mer lagringseffektivt än CHAR (fast längd) eftersom den bara tar upp plats för de tecken som faktiskt matas in.
+Varför: Används för all textdata. **VARCHAR** (variabel längd) är mer lagringseffektivt än **CHAR** (fast längd) eftersom den bara tar upp plats för de tecken som faktiskt matas in. Detta gör att databasen inte behöver reservera (binda) onödigt mycket minne för korta texter.
 
+För extremt stora textmängder (som t.ex. uppsatser eller långa kommentarer) hade datatypen **TEXT** kunnat användas, men för denna domän är **VARCHAR** mer än tillräckligt och generellt mer performant för de angivna längderna.
 Exempel: Längden anpassas efter behov: VARCHAR(100) för namn, VARCHAR(2) för korta betygskoder (grade), och VARCHAR(255) för längre fält som e-post.
 
 Specialfall: personNr (VARCHAR(13)) lagras som text. Detta är ett kritiskt val för att kunna inkludera bindestrecket (-) och förhindra att eventuella inledande nollor tas bort, vilket hade hänt om det lagrats som en siffra.
