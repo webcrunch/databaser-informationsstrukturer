@@ -22,6 +22,22 @@ Swagger UI (Dokumentation): http://localhost:5000/apidocs
 
 Bas-URL: http://localhost:5000/
 
+## 🛠️ Databasöversikt och Verktyg (9 Databaser!)
+
+Denna utvecklingsmiljö innehåller en omfattande uppsättning av databaser för att täcka alla olika delar att spara – från relationsdata till grafer och tidsserier.
+
+| Kategori | Databas | Syfte | GUI/Åtkomst | Port |
+| :--- | :--- | :--- | :--- | :--- |
+| Relations | MySQL (Nexus) | Huvuddatabas för API:et. | Adminer | `8085` |
+| Relations | MySQL (Scratch) | Övningsdatabas; alternativ port. | Adminer | `8085` |
+| Relations | PostgreSQL | Robust relationsstandard. | pgAdmin | `5050` |
+| Dokument | MongoDB | Dokumentlagring. | Mongo Express | `8081` |
+| Key-Value | Redis | Cache och sessionhantering. | Redis Commander | `8082` |
+| Graf | Neo4j | Renodlad grafdatabas (Property Graph). | Neo4j Browser | `7474` |
+| Graf | ArangoDB | Multi-Model (Dokument; Graf; KV). | Web GUI | `8529` |
+| Tidsserie | InfluxDB | Tidsseriedata för mätningar/loggning. | InfluxDB UI | `8086` |
+| Analytisk | DuckDB | In-process OLAP-motor. | CLI (`docker attach`) | N/A |
+
 ## 🛠️ Databasadministration (Adminer)
 
 Adminer är ett lättviktsverktyg för databashantering som körs i en separat Docker-container i din miljö. Du kan använda det för att bläddra i tabeller, köra SQL-frågor och validera data direkt.
