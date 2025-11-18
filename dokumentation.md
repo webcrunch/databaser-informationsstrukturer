@@ -17,7 +17,7 @@ Databas: NexusDB
 En administratörsroll (med rättigheter att skapa/radera användare och kurser) är inte en del av själva databasmodellen, utan förväntas hanteras av applikationslogiken ,t.ex. ett API, som ansluter till databasen.
 
 ## 🗃️ 2. Databasöversikt och Modell
-![ER bild över systemet](Diagram2.png)
+![ER bild över systemet](Images/Diagram2.png)
 
 ### 🔑 2.1 Tabellstruktur och Nycklar 
 (Baserat på ER-Diagrammet)

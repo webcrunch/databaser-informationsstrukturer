@@ -134,7 +134,7 @@ FROM
     JOIN Course AS C ON SE.courseCode = C.code;
 
 -- Exempelanvändning:
--- SELECT * FROM v_FullEnrollmentDetails;
+SELECT * FROM v_FullEnrollmentDetails;
 
 -- 10. Skapa en Rapportvy (Kursbeläggning/Topplista)
 -- Visar de kurser som har flest inskrivna studenter.
@@ -152,7 +152,7 @@ GROUP BY
 ORDER BY EnrolledStudents DESC;
 
 -- Exempelanvändning:
--- SELECT * FROM v_TopCourses;
+SELECT * FROM v_TopCourses;
 
 -- #####################################################################
 -- VG-KRAV & Avancerade Rapporter
