@@ -144,6 +144,21 @@ FROM
 -- Exempelanvändning:
 SELECT * FROM v_FullEnrollmentDetails;
 
+-- 9b Skapa en enkel vy för att se vilka studeter som finns i varje klass. Typ samma som vyn FullEnrollment.
+-- Men med mer information med studenten.Men en mindre join
+
+CREATE VIEW v_CourseStudents AS
+SELECT CONCAT(
+        S.firstName, ' ', S.lastName, ' (', S.personNr, ')'
+    ) AS StudentFullName, S.email, S.registeredDate, ST.courseCode, ST.grade, ST.completionDate, SS.statusName
+FROM
+    StudentEnrollment AS ST
+    INNER JOIN Student AS S ON ST.studentId = S.id
+    INNER JOIN StudentStatus AS SS ON S.statusId = SS.id;
+-- WHERE
+--     courseCode = 'DB101';
+
+SELECT * FROM v_CourseWithStudents;
 -- 10. Skapa en Rapportvy (Kursbeläggning/Topplista)
 -- Visar de kurser som har flest inskrivna studenter.
 CREATE VIEW v_TopCourses AS

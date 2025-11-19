@@ -30,6 +30,7 @@ VALUES (1, 'Aktiv'),
 
 -- 2. DATA FÖR TEACHER (Lärare)
 -- Utökad lista med fler lärare (ID 1 till 5).
+-- Sätter in id för att ha kontroll över vilken teacher som kopplas till vilken kurs.
 INSERT INTO
     Teacher (
         id,
@@ -72,6 +73,13 @@ VALUES (
         'Ekström',
         'elin.e@uni.se',
         'Matematik'
+    ),
+    (
+        6,
+        'Mathias',
+        'Thyssel',
+        'Math.Thy@uni.se',
+        'Databaser & Säkerhet'
     );
 
 -- 3. DATA FÖR COURSE (Kurser)
@@ -87,13 +95,13 @@ VALUES (
         'DB101',
         'Introduktion till Databaser',
         7.50,
-        1
+        6
     ),
     (
         'DB205',
         'Avancerad SQL-programmering',
         15.00,
-        1
+        6
     ),
     (
         'EK100',
@@ -136,12 +144,20 @@ VALUES (
         'Systemutvecklingsmetoder',
         30.00,
         1
+    ),
+    (
+        'BI304',
+        'Bygg & Infrastruktur',
+        24.00,
+        5
     );
 
 -- 4. DATA FÖR STUDENT (Studenter)
 -- Utökad lista med fler studenter (ID 1 till 11) och varierad status.
+-- Sätter in id för att ha kontroll över vilken student som kopplas till vilken kurs.
 INSERT INTO
     Student (
+        id,
         firstName,
         lastName,
         personNr,
@@ -150,6 +166,7 @@ INSERT INTO
         statusId
     )
 VALUES (
+        1,
         'Sara',
         'Svensson',
         '950101-1234',
@@ -158,6 +175,7 @@ VALUES (
         1
     ), -- Aktiv
     (
+        2,
         'Erik',
         'Eriksson',
         '900202-5678',
@@ -166,6 +184,7 @@ VALUES (
         1
     ), -- Aktiv
     (
+        3,
         'Lisa',
         'Larsson',
         '000303-9012',
@@ -174,6 +193,7 @@ VALUES (
         2
     ), -- Examen
     (
+        4,
         'Pelle',
         'Persson',
         '880404-3456',
@@ -182,6 +202,7 @@ VALUES (
         4
     ), -- Tjänstledig
     (
+        5,
         'Maria',
         'Månsson',
         '020505-7890',
@@ -190,6 +211,7 @@ VALUES (
         3
     ), -- Utskriven
     (
+        6,
         'Olle',
         'Olofsson',
         '990606-2109',
@@ -198,6 +220,7 @@ VALUES (
         1
     ), -- Aktiv
     (
+        7,
         'Frida',
         'Falk',
         '970707-1122',
@@ -206,6 +229,7 @@ VALUES (
         1
     ), -- Aktiv
     (
+        8,
         'Gustav',
         'Gröndahl',
         '850808-3344',
@@ -214,6 +238,7 @@ VALUES (
         2
     ), -- Examen
     (
+        9,
         'Hanna',
         'Holm',
         '010909-5566',
@@ -222,6 +247,7 @@ VALUES (
         4
     ), -- Tjänstledig
     (
+        10,
         'Johan',
         'Jansson',
         '031010-7788',
@@ -230,6 +256,7 @@ VALUES (
         1
     ),
     (
+        11,
         'Valle',
         'Svantesson',
         '960406-5679',
@@ -290,3 +317,19 @@ VALUES
 
 -- Johan (ID 10) - Aktiv
 (10, 'DB101', NULL, NULL), (10, 'EK100', NULL, NULL);
+
+-- Valle (ID 11 ) -Aktiv
+(11, 'BI304', NULL, NULL) -- Pågående
+,
+(
+    11,
+    'IT400',
+    'A',
+    '2023-11-29'
+),
+(
+    11,
+    'EK210',
+    'B',
+    '2024-06-01'
+)
