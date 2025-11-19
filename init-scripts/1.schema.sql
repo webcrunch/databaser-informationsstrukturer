@@ -98,8 +98,14 @@ FROM Course C
 -- 7c. v_StudentEnrollmentOverview
 CREATE VIEW v_StudentEnrollmentOverview AS
 SELECT
-    SE.studentId,
-    CONCAT(S.firstName, ' ', S.lastName) AS studentFullName,
+    CONCAT(
+        S.firstName,
+        ' ',
+        S.lastName,
+        '(Student ID: ',
+        SE.studentId,
+        ' )'
+    ) AS studentFullName,
     S.personNr,
     S.email AS studentEmail,
     SS.statusName AS studentStatus,
@@ -116,4 +122,4 @@ FROM
     JOIN StudentStatus SS ON S.statusId = SS.id
     JOIN Course C ON SE.courseCode = C.code
     JOIN Teacher T ON C.responsibleTeacherId = T.id
-ORDER BY SS.statusName;
+ORDER BY SE.courseCode
