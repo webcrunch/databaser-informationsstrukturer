@@ -4,6 +4,7 @@ services:
   # ---------------------------------
   postgres_db:
     image: postgres:latest
+    profiles: ["pg", "all"]
     container_name: mai25ma_postgres
     restart: always
     environment:
@@ -15,9 +16,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
 
   pgadmin:
     image: dpage/pgadmin4
+    profiles: ["pg", "all"]
     container_name: mai25ma_pgadmin
     restart: always
     environment:
@@ -32,6 +35,7 @@ services:
   mysql_db:
     image: mysql:8.0
     container_name: mai25ma_mysql
+    profiles: ["sql", "all"]
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     restart: always
     environment:
@@ -48,7 +52,7 @@ services:
 
   mysql_nexus_db:
     image: mysql:8.0
-    # profiles: ["sql", "nexus", "all"]
+    profiles: ["sql", "nexus", "all"]
     container_name: mai25ma_nexus_proj
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     restart: always
@@ -67,13 +71,14 @@ services:
   adminer:
     image: adminer:latest
     container_name: mai25ma_adminer
+    profiles: ["sql", "nexus", "all"]
     restart: always
     ports:
       - "8085:8080"
-    depends_on:
-      - postgres_db
-      - mysql_db
-      - mysql_nexus_db
+    # depends_on:
+    #   - postgres_db
+    #   - mysql_db
+    #   - mysql_nexus_db
 
   # ---------------------------------
   # 2. NoSQL: Dokument & Key-Value
@@ -81,6 +86,7 @@ services:
   mongo:
     image: mongo:latest
     container_name: mai25ma_mongo
+    profiles: ["nosql", "all"]
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: adminuser
@@ -105,6 +111,7 @@ services:
   mongo_express:
     image: mongo-express
     container_name: mai25ma_mongoexpress
+    profiles: ["nosql", "all"]
     restart: always
     environment:
       MONGODB_SERVER: mongo
@@ -124,6 +131,7 @@ services:
   redis_cache:
     image: redis:latest
     container_name: mai25ma_redis
+    profiles: ["redis", "all"]
     restart: always
     ports:
       - "6379:6379"
@@ -133,6 +141,7 @@ services:
   redis_commander:
     image: rediscommander/redis-commander
     container_name: mai25ma_rediscommander
+    profiles: ["redis", "all"]
     restart: always
     environment:
       REDIS_HOSTS: local_redis:redis_cache:6379
@@ -146,6 +155,7 @@ services:
   # ---------------------------------
   neo4j:
     image: neo4j:latest
+    profiles: ["graph", "all"]
     hostname: neo4j
     ports:
       - "7474:7474"
@@ -163,6 +173,7 @@ services:
   arangodb:
     image: arangodb/arangodb:latest
     container_name: mai25ma_arangodb
+    profiles: ["graph", "all"]
     restart: always
     environment:
       ARANGO_ROOT_PASSWORD: arangopassword
@@ -177,6 +188,7 @@ services:
   duckdb:
     image: duckdb/duckdb:latest
     container_name: duckdb_container
+    profiles: ["analytics", "all"]
     volumes:
       - duckdb_data:/data # <-- Fixat: Tog bort ./ för att använda volymen korrekt
     command: ["duckdb", "/data/my_database.duckdb"]
@@ -185,6 +197,7 @@ services:
 
   influxdb:
     image: influxdb:latest
+    profiles: ["analytics", "all"]
     container_name: mai25ma_influxdb
     restart: always
     ports:
@@ -201,6 +214,7 @@ services:
 
   grafana:
     image: grafana/grafana:latest
+    profiles: ["analytics", "all"]
     container_name: mai25ma_grafana
     restart: always
     ports:
@@ -219,12 +233,14 @@ services:
   drawdb:
     image: ghcr.io/drawdb-io/drawdb:latest
     container_name: mai25ma_drawdb
+    profiles: ["tools", "all"]
     ports:
       - "3000:80"
     restart: unless-stopped
 
   drawio:
     image: jgraph/drawio:latest
+    profiles: ["tools", "all"]
     container_name: mai25ma_drawio
     ports:
       - "8080:8080"
@@ -235,6 +251,7 @@ services:
   # ---------------------------------
   api:
     build: ./backend
+    profiles: ["app", "nexus", "all"]
     container_name: swagger_api_exam
     restart: always
     ports:
