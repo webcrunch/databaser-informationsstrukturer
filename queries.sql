@@ -278,8 +278,7 @@ ORDER BY Genomsnittligt_Betyg DESC;
 -- #####################################################################
 
 -- Procedur 1: Registrera en student på en kurs (sätter pågående status)
-DELIMITER /
-/
+DELIMITER / /
 
 CREATE PROCEDURE RegisterStudentToCourse (
     IN p_studentId INT,
@@ -291,17 +290,16 @@ BEGIN
     INSERT INTO StudentEnrollment (studentId, courseCode)
     VALUES (p_studentId, p_courseCode);
 END
-/
-/
+//
 
 DELIMITER;
 
 -- Exempelanvändning:
--- CALL RegisterStudentToCourse (10, 'IT400'); -- lägger till studentid 10 -> Johan Jansson till cource IT400
+CALL RegisterStudentToCourse (10, 'IT400');
+-- lägger till studentid 10 -> Johan Jansson till cource IT400
 
 -- Procedur 2: Ge betyg/slutföra en kurs för en student
-DELIMITER /
-/
+DELIMITER / /
 
 CREATE PROCEDURE GraduateStudentToCourse (
     IN p_studentId INT,
@@ -319,10 +317,9 @@ BEGIN
         studentId = p_studentId 
         AND courseCode = p_courseCode;
 END
-/
-/
+//
 
 DELIMITER;
 
 -- Exempelanvändning:
--- CALL GraduateStudentToCourse (10, 'IT400', 'B', '2025-11-10');
+CALL GraduateStudentToCourse ( 10, 'IT400', 'B', '2025-11-10' );
