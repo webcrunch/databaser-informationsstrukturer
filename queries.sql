@@ -34,6 +34,14 @@ WHERE
     firstName = 'Pelle'
     AND lastName = 'Persson';
 
+-- 2. Uppdatera data (Modifera)
+-- Uppdatera .
+UPDATE Student
+SET
+    email = 'pelle.persson.ny@mail.com'
+WHERE
+    firstName = 'Pelle'
+    AND lastName = 'Persson';
 -- 3. Radera specifik data
 -- Radera den nyligen tillagda studenten Kalle Karlsson.
 DELETE FROM Student
@@ -197,8 +205,10 @@ GROUP BY
     C.credits
 ORDER BY C.credits DESC;
 
--- 13. Avancerad fråga: Hitta studenter utan pågående inskrivningar
--- Använder LEFT JOIN för att hitta studenter som har status "Aktiv" (statusId=1) men ingen inskriven kurs utan betyg.
+/* 13. Avancerad fråga: Hitta studenter utan pågående inskrivningar
+* Använder LEFT JOIN för att hitta studenter som har status "Aktiv" (statusId=1) men ingen inskriven kurs utan betyg.
+* "Hämta alla studenter som är 'Aktiva'. Försök hitta en pågående kurs för dem.
+* Om du inte hittar någon pågående kurs (resultatet blev NULL), visa den studenten." */
 SELECT S.id, S.firstName, S.lastName, ST.statusName
 FROM
     Student AS S
@@ -247,40 +257,6 @@ ORDER BY Genomsnittligt_Betyg DESC;
 
 -- 15. Avancerad fråga: De bästa studenterna i en specifik kurs (Använder Subquery)
 -- Hitta studenterna vars betyg är högre än genomsnittet för kursen 'DB101'.
-SELECT CONCAT(S.firstName, ' ', S.lastName) AS Name, SE.grade AS DB101_Betyg
-FROM
-    StudentEnrollment AS SE
-    JOIN Student AS S ON SE.studentId = S.id
-WHERE
-    SE.courseCode = 'DB101'
-    -- Använd ett numeriskt värde för betyget (A=5, B=4, C=3, G/D=2, U=1)
-    AND (
-        CASE
-            WHEN SE.grade = 'A' THEN 5
-            WHEN SE.grade = 'B' THEN 4
-            WHEN SE.grade = 'C' THEN 3
-            WHEN SE.grade = 'G'
-            OR SE.grade = 'D' THEN 2
-            ELSE 1
-        END
-    ) > (
-        -- Subquery: Beräkna det genomsnittliga numeriska betyget för DB101
-        SELECT AVG(
-                CASE
-                    WHEN grade = 'A' THEN 5
-                    WHEN grade = 'B' THEN 4
-                    WHEN grade = 'C' THEN 3
-                    WHEN grade = 'G'
-                    OR grade = 'D' THEN 2
-                    ELSE NULL
-                END
-            )
-        FROM StudentEnrollment
-        WHERE
-            courseCode = 'DB101'
-            AND grade IS NOT NULL
-            AND grade != 'U'
-    );
 
 -- #####################################################################
 -- 16. Stored Procedures (VG)

@@ -2,6 +2,10 @@
 -- Detta kräver att du har kört schema.sql först.
 SET FOREIGN_KEY_CHECKS = 0;
 
+SET NAMES 'utf8mb4';
+
+SET CHARACTER SET utf8mb4;
+
 USE Nexus_DB;
 
 TRUNCATE TABLE `StudentEnrollment`;
@@ -135,10 +139,9 @@ VALUES (
     );
 
 -- 4. DATA FÖR STUDENT (Studenter)
--- Utökad lista med fler studenter (ID 1 till 10) och varierad status.
+-- Utökad lista med fler studenter (ID 1 till 11) och varierad status.
 INSERT INTO
     Student (
-        id,
         firstName,
         lastName,
         personNr,
@@ -147,7 +150,6 @@ INSERT INTO
         statusId
     )
 VALUES (
-        1,
         'Sara',
         'Svensson',
         '950101-1234',
@@ -156,7 +158,6 @@ VALUES (
         1
     ), -- Aktiv
     (
-        2,
         'Erik',
         'Eriksson',
         '900202-5678',
@@ -165,7 +166,6 @@ VALUES (
         1
     ), -- Aktiv
     (
-        3,
         'Lisa',
         'Larsson',
         '000303-9012',
@@ -174,7 +174,6 @@ VALUES (
         2
     ), -- Examen
     (
-        4,
         'Pelle',
         'Persson',
         '880404-3456',
@@ -183,7 +182,6 @@ VALUES (
         4
     ), -- Tjänstledig
     (
-        5,
         'Maria',
         'Månsson',
         '020505-7890',
@@ -192,7 +190,6 @@ VALUES (
         3
     ), -- Utskriven
     (
-        6,
         'Olle',
         'Olofsson',
         '990606-2109',
@@ -201,7 +198,6 @@ VALUES (
         1
     ), -- Aktiv
     (
-        7,
         'Frida',
         'Falk',
         '970707-1122',
@@ -210,7 +206,6 @@ VALUES (
         1
     ), -- Aktiv
     (
-        8,
         'Gustav',
         'Gröndahl',
         '850808-3344',
@@ -219,7 +214,6 @@ VALUES (
         2
     ), -- Examen
     (
-        9,
         'Hanna',
         'Holm',
         '010909-5566',
@@ -228,16 +222,21 @@ VALUES (
         4
     ), -- Tjänstledig
     (
-        10,
         'Johan',
         'Jansson',
         '031010-7788',
         'johan.j@mail.com',
         '2024-11-15',
         1
+    ),
+    (
+        'Valle',
+        'Svantesson',
+        '960406-5679',
+        'Valle.S@mail.com',
+        '2025-03-23',
+        1
     );
--- Aktiv
-
 -- 5. DATA FÖR STUDENTENROLLMENT (Inskrivningar)
 INSERT INTO
     StudentEnrollment (

@@ -5,16 +5,19 @@
 
 USE Nexus_DB;
 
--- 1. Skapa tabell: StudentStatus (Lookup-tabell)
--- Används som referens för studenters aktuella status.
+-- Tvinga UTF-8 för denna session
+SET NAMES 'utf8mb4';
+
+SET CHARACTER SET utf8mb4;
+
+-- 1. Skapa tabell: StudentStatus
 CREATE TABLE IF NOT EXISTS StudentStatus (
     id INT NOT NULL AUTO_INCREMENT,
     statusName VARCHAR(50) NOT NULL UNIQUE,
     PRIMARY KEY (id)
-);
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- 2. Skapa tabell: Student
--- Huvudtabell för studentinformation.
 CREATE TABLE IF NOT EXISTS Student (
     id INT NOT NULL AUTO_INCREMENT,
     firstName VARCHAR(100) NOT NULL,
@@ -25,10 +28,9 @@ CREATE TABLE IF NOT EXISTS Student (
     statusId INT NOT NULL DEFAULT 1,
     PRIMARY KEY (id),
     FOREIGN KEY (statusId) REFERENCES StudentStatus (id)
-);
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- 3. Skapa tabell: Teacher
--- Huvudtabell för lärarinformation.
 CREATE TABLE IF NOT EXISTS Teacher (
     id INT NOT NULL AUTO_INCREMENT,
     firstName VARCHAR(100) NOT NULL,
@@ -36,10 +38,9 @@ CREATE TABLE IF NOT EXISTS Teacher (
     email VARCHAR(255) NOT NULL UNIQUE,
     department VARCHAR(100) NOT NULL,
     PRIMARY KEY (id)
-);
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- 4. Skapa tabell: Course
--- Huvudtabell för kursinformation.
 CREATE TABLE IF NOT EXISTS Course (
     code VARCHAR(10) NOT NULL,
     name VARCHAR(255) NOT NULL,
@@ -47,55 +48,41 @@ CREATE TABLE IF NOT EXISTS Course (
     responsibleTeacherId INT NOT NULL,
     PRIMARY KEY (code),
     FOREIGN KEY (responsibleTeacherId) REFERENCES Teacher (id)
-);
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
--- 5. Skapa tabell: StudentEnrollment (Kopplingstabell)
--- Hanterar M:M-relationen mellan Student och Course (lagrar inskrivning, betyg, etc.).
-
-
+-- 5. Skapa tabell: StudentEnrollment
 CREATE TABLE IF NOT EXISTS StudentEnrollment (
-    studentId       INT             NOT NULL,
-    courseCode      VARCHAR(10)     NOT NULL,
-    grade           VARCHAR(2),     -- T.ex. 'A', 'B', 'U', 'G'
-    completionDate  DATE,
-    
+    studentId INT NOT NULL,
+    courseCode VARCHAR(10) NOT NULL,
+    grade VARCHAR(2),
+    completionDate DATE,
     PRIMARY KEY (studentId, courseCode),
-
--- ON DELETE CASCADE: Radera inskrivning om student raderas
-FOREIGN KEY (studentId) REFERENCES Student (id) ON DELETE CASCADE,
-
--- ON DELETE CASCADE: Radera inskrivning om kurs raderas
-FOREIGN KEY (courseCode) 
-        REFERENCES Course (code) 
-        ON DELETE CASCADE
-);
+    FOREIGN KEY (studentId) REFERENCES Student (id) ON DELETE CASCADE,
+    FOREIGN KEY (courseCode) REFERENCES Course (code) ON DELETE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- #####################################################################
 -- 6. SKAPA INDEX
 -- #####################################################################
-
--- Motivering: statusId är en Foreign Key som används i många sökningar (WHERE-satser)
--- och JOINs för att filtrera studenter baserat på deras status.
 CREATE INDEX idx_student_statusId ON Student (statusId);
 
 -- #####################################################################
 -- 7. SKAPA VYER (VIEWS)
 -- #####################################################################
 
--- Raderar eventuella gamla vyer för att tillåta skriptet att köras flera gånger
 DROP VIEW IF EXISTS v_StudentEnrollmentOverview;
 
 DROP VIEW IF EXISTS v_CourseTeachers;
 
 DROP VIEW IF EXISTS v_StudentStatus;
 
--- 7a. v_StudentStatus: Visar all studentdata inklusive det läsbara statusnamnet.
+-- 7a. v_StudentStatus
 CREATE VIEW v_StudentStatus AS
 SELECT S.id, S.firstName, S.lastName, S.personNr, S.email, S.registeredDate, SS.statusName, S.statusId
 FROM Student S
     JOIN StudentStatus SS ON S.statusId = SS.id;
 
--- 7b. v_CourseTeachers: Visar alla kurser med den ansvariga lärarens fullständiga namn.
+-- 7b. v_CourseTeachers
 CREATE VIEW v_CourseTeachers AS
 SELECT
     C.code,
@@ -108,7 +95,7 @@ SELECT
 FROM Course C
     JOIN Teacher T ON C.responsibleTeacherId = T.id;
 
--- 7c. v_StudentEnrollmentOverview: En detaljerad rapportvy över alla registreringar.
+-- 7c. v_StudentEnrollmentOverview
 CREATE VIEW v_StudentEnrollmentOverview AS
 SELECT
     SE.studentId,

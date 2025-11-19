@@ -1,27 +1,21 @@
-version: "3.8"
-
 services:
   # ---------------------------------
   # 1. Relationsdatabaser (RDBMS)
   # ---------------------------------
-  # 1A. Relationsdatabas: PostgreSQL (Robust standardval)
   postgres_db:
     image: postgres:latest
     container_name: mai25ma_postgres
     restart: always
     environment:
-      POSTGRES_USER: user # Applikationsanvändare
+      POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: main_database
-      # 🌟 NYTT: Skapa en separat administrativ/superanvändare
-      POSTGRES_SUPERUSER: owneruser # Användarnamn för den nya ägaren
-      POSTGRES_SUPERUSER_PASSWORD: securepassword # Lösenord för den nya ägaren
+      # Tog bort de ogiltiga SUPERUSER variablerna för att undvika förvirring
     ports:
-      - "5432:5432" # GUI-anslutning: localhost:5432
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  # 1B. GUI för PostgreSQL: pgAdmin
   pgadmin:
     image: dpage/pgadmin4
     container_name: mai25ma_pgadmin
@@ -31,14 +25,14 @@ services:
       PGADMIN_DEFAULT_PASSWORD: verysecurepassword
       PGADMIN_SERVER_URL: postgres_db:5432
     ports:
-      - "5050:80" # pgAdmin GUI nås på http://localhost:5050
+      - "5050:80"
     depends_on:
       - postgres_db
 
-  # 1C. Relationsdatabas: MySQL (Flexibelt övningsområde/Scratchpad)
   mysql_db:
     image: mysql:8.0
     container_name: mai25ma_mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
@@ -46,15 +40,17 @@ services:
       MYSQL_USER: user
       MYSQL_PASSWORD: password
     ports:
-      - "3307:3306" # GUI-anslutning: localhost:3307
+      - "3307:3306"
     volumes:
       - mysql_scratch_data:/var/lib/mysql
       - ./user-upgrade:/docker-entrypoint-initdb.d
+      - ./my.cnf:/etc/mysql/conf.d/my.cnf:ro
 
-  # 1D. Relationsdatabas: MySQL (DEDIKERAD för Nexus Projektet)
   mysql_nexus_db:
     image: mysql:8.0
+    # profiles: ["sql", "nexus", "all"]
     container_name: mai25ma_nexus_proj
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
@@ -62,18 +58,18 @@ services:
       MYSQL_USER: nexusUser
       MYSQL_PASSWORD: anotherPassword
     ports:
-      - "3306:3306" # GUI-anslutning: localhost:3306
+      - "3306:3306"
     volumes:
       - mysql_nexus_data:/var/lib/mysql
       - ./init-scripts:/docker-entrypoint-initdb.d
+      - ./my.cnf:/etc/mysql/conf.d/my.cnf:ro
 
-  # 1E. GUI: Adminer (Webbgränssnitt för MySQL, PostgreSQL, etc.)
   adminer:
     image: adminer:latest
     container_name: mai25ma_adminer
     restart: always
     ports:
-      - "8085:8080" # Adminer GUI nås på http://localhost:8085
+      - "8085:8080"
     depends_on:
       - postgres_db
       - mysql_db
@@ -82,7 +78,6 @@ services:
   # ---------------------------------
   # 2. NoSQL: Dokument & Key-Value
   # ---------------------------------
-  # 2A. NoSQL: MongoDB (Dokumentdatabas)
   mongo:
     image: mongo:latest
     container_name: mai25ma_mongo
@@ -107,7 +102,6 @@ services:
       retries: 12
       start_period: 30s
 
-  # 2B. GUI för MongoDB: Mongo Express
   mongo_express:
     image: mongo-express
     container_name: mai25ma_mongoexpress
@@ -127,17 +121,15 @@ services:
       mongo:
         condition: service_healthy
 
-  # 2C. NoSQL: Redis (Key-Value Store för cache)
   redis_cache:
     image: redis:latest
     container_name: mai25ma_redis
     restart: always
     ports:
-      - "6379:6379" # GUI-anslutning: localhost:6379
+      - "6379:6379"
     volumes:
       - redis_data:/data
 
-  # 2D. GUI för Redis: Redis Commander
   redis_commander:
     image: rediscommander/redis-commander
     container_name: mai25ma_rediscommander
@@ -145,23 +137,22 @@ services:
     environment:
       REDIS_HOSTS: local_redis:redis_cache:6379
     ports:
-      - "8082:8081" # GUI nås på http://localhost:8082
+      - "8082:8081"
     depends_on:
       - redis_cache
 
   # ---------------------------------
-  # 3. NoSQL: Grafdatabaser (Graph)
+  # 3. NoSQL: Graf & Multi-Model
   # ---------------------------------
-  # 3A. NoSQL: Neo4j (Grafdatabas: Property Graph Model)
   neo4j:
     image: neo4j:latest
     hostname: neo4j
     ports:
-      - "7474:7474" # Neo4j Browser (GUI)
-      - "7687:7687" # Bolt Protocol
+      - "7474:7474"
+      - "7687:7687"
     volumes:
-      - ./data:/data
-      - ./logs:/logs
+      - neo4j_data:/data # <-- Fixat: Tog bort ./ för att använda volymen korrekt
+      - ./logs:/logs # Loggar är ok att ha lokalt
       - ./import:/var/lib/neo4j/import
       - ./plugins:/plugins
     environment:
@@ -169,7 +160,6 @@ services:
       - NEO4J_dbms_security_auth__minimum__password__length=8
     restart: unless-stopped
 
-  # 3B. NoSQL: ArangoDB (Multi-Model: Document, Graph, Key-Value)
   arangodb:
     image: arangodb/arangodb:latest
     container_name: mai25ma_arangodb
@@ -177,30 +167,28 @@ services:
     environment:
       ARANGO_ROOT_PASSWORD: arangopassword
     ports:
-      - "8529:8529" # GUI & API: localhost:8529
+      - "8529:8529"
     volumes:
       - arangodb_data:/var/lib/arangodb3
 
   # ---------------------------------
   # 4. OLAP & Time-Series
   # ---------------------------------
-  # 4A. OLAP: DuckDB (In-Process Analytisk Databas)
   duckdb:
     image: duckdb/duckdb:latest
     container_name: duckdb_container
     volumes:
-      - ./data:/data
-    command: ["duckdb", "/data/my_database.duckdb"] # Interaktivt läge
+      - duckdb_data:/data # <-- Fixat: Tog bort ./ för att använda volymen korrekt
+    command: ["duckdb", "/data/my_database.duckdb"]
     tty: true
     stdin_open: true
 
-  # 4B. NoSQL: InfluxDB (Högpresterande Tidsseriedatabas)
   influxdb:
     image: influxdb:latest
     container_name: mai25ma_influxdb
     restart: always
     ports:
-      - "8086:8086" # API & Web UI nås på http://localhost:8086
+      - "8086:8086"
     volumes:
       - influxdb_data:/var/lib/influxdb2
     environment:
@@ -211,13 +199,12 @@ services:
       DOCKER_INFLUXDB_INIT_BUCKET: main_bucket
       DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: supersecrettoken
 
-  # 4C. GUI/Visualisering: Grafana (Dashboard- och visualiseringsverktyg)
   grafana:
     image: grafana/grafana:latest
     container_name: mai25ma_grafana
     restart: always
     ports:
-      - "3001:3000" # Grafana GUI nås på http://localhost:3001
+      - "3001:3000"
     volumes:
       - grafana_data:/var/lib/grafana
     environment:
@@ -229,24 +216,22 @@ services:
   # ---------------------------------
   # 5. Modelleringsverktyg
   # ---------------------------------
-  # 5A. Modelleringsverktyg A: DrawDB (Schema Editor)
   drawdb:
     image: ghcr.io/drawdb-io/drawdb:latest
     container_name: mai25ma_drawdb
     ports:
-      - "3000:80" # DrawDB nås på http://localhost:3000
+      - "3000:80"
     restart: unless-stopped
 
-  # 5B. Modelleringsverktyg B: draw.io (Allmän Diagram Editor)
   drawio:
     image: jgraph/drawio:latest
     container_name: mai25ma_drawio
     ports:
-      - "8080:8080" # draw.io nås på http://localhost:8080
+      - "8080:8080"
     restart: unless-stopped
 
   # ---------------------------------
-  # 6. Applikationstjänsten (Flask API)
+  # 6. Applikationstjänst
   # ---------------------------------
   api:
     build: ./backend
@@ -256,7 +241,6 @@ services:
       - "5000:5000"
     environment:
       FLASK_APP: backend.py
-      # Ansluter till Nexus MySQL-tjänsten
       MYSQL_DATABASE_HOST: mysql_nexus_db
       MYSQL_DATABASE_DB: Nexus_DB
       MYSQL_DATABASE_USER: nexusUser
@@ -266,7 +250,7 @@ services:
       - mysql_nexus_db
 
 # ---------------------------------
-# Volymer
+# Volymer (Hanteras av Docker)
 # ---------------------------------
 volumes:
   postgres_data:
@@ -274,6 +258,8 @@ volumes:
   mysql_nexus_data:
   mongo_data:
   redis_data:
-  arangodb_data: # <-- NY VOLYM för ArangoDB
-  influxdb_data: # <-- NY VOLYM för InfluxDB
-  grafana_data: # <-- NY VOLYM för Grafana
+  duckdb_data:
+  neo4j_data:
+  arangodb_data:
+  influxdb_data:
+  grafana_data:
