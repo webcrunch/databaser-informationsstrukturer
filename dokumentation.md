@@ -29,7 +29,7 @@ En administratörsroll (med rättigheter att skapa/radera användare och kurser)
 | | `lastName` | VARCHAR(100) | - | N/A |
 | | `email` | VARCHAR(255) | - | N/A |
 | | `department` | VARCHAR(100) | - | N/A |
-| **course** | `code` | VARCHAR(10) | **PK** | N/A |
+| **Course** | `code` | VARCHAR(10) | **PK** | N/A |
 | | `name` | VARCHAR(255) | - | N/A |
 | | `credits` | DECIMAL(4, 2) | - | N/A |
 | | `responsibleTeacherId` | INTEGER | **FK** | `Teacher(id)` |
@@ -47,7 +47,7 @@ En administratörsroll (med rättigheter att skapa/radera användare och kurser)
 | | `grade` | VARCHAR(2) | - | N/A |
 | | `completionDate` | DATE | - | N/A |
 
-**(Notera:** Tabellen StudentEnrollment använder en Sammansatt Primärnyckel (PK), vilken består av studentId och courseCode.... Båda dessa fält fungerar även som Främmande Nycklar (FK) till respektive entitet.)
+**(Notera:** Tabellen StudentEnrollment använder en Sammansatt Primärnyckel (PK), vilken består av studentId och courseCode. Båda dessa fält fungerar även som Främmande Nycklar (FK) till respektive entitet.)
 ## 🔗 3. Relationer och Motivering
 
 ### → 3.1 One-to-Many (1-M) Relation
@@ -175,6 +175,8 @@ Om en Student raderas: Om student "Sara Svensson" (ID 1) tas bort från systemet
 Om en Kurs raderas: Om kursen 'DB101' raderas (kanske lades ner), är alla registreringar för den kursen också irrelevanta. ON DELETE CASCADE raderar dem automatiskt.
 
 ## ⚡ 7. Indexering
-För att optimera prestandan vid sökningar har ett index skapats på kolumnen Student.email.
+### 1. Student.email (Sökoptimering): 
+E-postadressen är, tillsammans med personnumret, en av de primära metoderna för att söka efter en specifik student. Utan ett index skulle databasen behöva göra en "table scan" vid varje sökning.
 
-Motivering: E-postadressen är, tillsammans med personnumret, en av de primära metoderna för att söka efter en specifik student. Utan ett index skulle databasen behöva skanna hela Student-tabellen (en "table scan") varje gång en användare söker efter en student via e-post, vilket blir mycket långsamt när databasen växer. Genom att indexera Student.email kan databasen omedelbart slå upp raden, vilket ger en dramatisk prestandaökning vid sökningar.
+#### 2. Student.statusId (Join-optimering): 
+Eftersom statusId är en främmande nyckel som används frekvent för att koppla ihop Student och StudentStatus (i JOIN-satser), snabbar detta index upp hämtningen av studentlistor där vi vill visa statusnamnet (t.ex. "Aktiv") istället för bara siffran..
