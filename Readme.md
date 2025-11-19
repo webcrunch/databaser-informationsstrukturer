@@ -10,9 +10,16 @@ API:et är komplett med fullständiga CRUD-operationer samt avancerade databasfu
 
 För att köra systemet, se till att du har Docker och Docker Compose installerat.
 
+Har lagt in olika profiler:
+
+| Kategori | Gör |
+| all | startar alla kontainers | 
+| nexus | startar allt som har till skolarbetet att göra |
+| sql| startar alla sql databaser|
+|mongo | startar allt med nosql databaser||
 Starta applikationen och databasen:
 ```bash
-docker-compose up -d 
+docker-compose up --profile {profile} -d 
 ```
 
 Öppna API-dokumentationen:
@@ -90,7 +97,7 @@ API:et interagerar med följande tabeller:
 
 Alla endpoints är grupperade i Namespaces (t.ex. /students, /courses) och dokumenterade i Swagger UI (/apidocs).
 
-1. Studenthantering (/students)
+### 1. Studenthantering (/students)
 
 | Metod | Route | Beskrivning |
 | :--- | :--- | :--- |
