@@ -134,6 +134,9 @@ student_model = api.model(
         "statusId": fields.Integer(
             description="Status-ID (FK till StudentStatus)"
         ),  # Lade till statusId
+        "statusName": fields.String(
+            readonly=True, description="Namn på status (t.ex. Aktiv, Tjänstledig)"
+        ),
     },
 )
 
@@ -155,8 +158,11 @@ course_model = api.model(
         "code": fields.String(readonly=True, description="Kurskod"),
         "name": fields.String(required=True, description="Kursnamn"),
         "credits": fields.Float(required=True, description="Högskolepoäng"),
-        "responsibleTeacherId": fields.Integer(
-            required=True, description="Ansvarig lärares ID"
+        # "responsibleTeacherId": fields.Integer(
+        #     required=True, description="Ansvarig lärares ID"
+        # ),
+        "responsibleTeacherName": fields.String(
+            readonly=True, description="Namn på Teacher"
         ),
     },
 )
@@ -237,7 +243,13 @@ class StudentList(Resource):
 
         try:
             with cursor_manager(db) as cursor:
-                cursor.execute("SELECT * FROM Student")
+                cursor.execute(
+                    """
+    SELECT S.*, SS.statusName 
+    FROM Student AS S 
+    JOIN StudentStatus AS SS ON S.statusId = SS.id
+    """
+                )
                 students = cursor.fetchall()
                 return students
         except mysql.connector.Error as err:
@@ -302,7 +314,14 @@ class Student(Resource):
 
         try:
             with cursor_manager(db) as cursor:
-                cursor.execute("SELECT * FROM Student WHERE id = %s", (student_id,))
+                query = """
+                SELECT S.id, S.firstName, S.lastName, S.personNr, S.email, 
+                    S.registeredDate, S.statusId, SS.statusName
+                FROM Student AS S
+                JOIN StudentStatus AS SS ON S.statusId = SS.id
+                WHERE S.id = %s
+                """
+                cursor.execute(query, (student_id,))
                 student = cursor.fetchone()
                 if not student:
                     student_ns.abort(404, f"Student med ID {student_id} hittades inte.")
@@ -348,7 +367,13 @@ class Student(Resource):
                 if rows_affected == 0:
                     student_ns.abort(404, f"Student med ID {student_id} hittades inte.")
 
-                cursor.execute("SELECT * FROM Student WHERE id = %s", (student_id,))
+                cursor.execute(
+                    """SELECT S.*, SS.statusName 
+    FROM Student AS S 
+    JOIN StudentStatus AS SS ON S.statusId = SS.id 
+    WHERE S.id = %s""",
+                    (student_id,),
+                )
                 updated_student = cursor.fetchone()
                 return updated_student
         except mysql.connector.IntegrityError as err:
@@ -493,7 +518,11 @@ class CourseList(Resource):
             course_ns.abort(503, "Kunde inte ansluta till databasen")
         try:
             with cursor_manager(db) as cursor:
-                cursor.execute("SELECT * FROM Course")
+                cursor.execute(
+                    """SELECT C.*, CONCAT(T.firstName, ' ', T.lastName) as responsibleTeacherName
+                    FROM Course AS C
+                    JOIN Teacher AS T ON C.responsibleTeacherId = T.id"""
+                )
                 courses = cursor.fetchall()
                 return courses
         except mysql.connector.Error as err:
@@ -560,7 +589,12 @@ class Course(Resource):
             course_ns.abort(503, "Kunde inte ansluta till databasen")
         try:
             with cursor_manager(db) as cursor:
-                cursor.execute("SELECT * FROM Course WHERE code = %s", (course_code,))
+                cursor.execute(
+                    """SELECT C.*, CONCAT(T.firstName, ' ', T.lastName) as responsibleTeacherName
+FROM Course AS C
+JOIN Teacher AS T ON C.responsibleTeacherId = T.id WHERE code = %s""",
+                    (course_code,),
+                )
                 course = cursor.fetchone()
                 if not course:
                     course_ns.abort(404, f"Kurs med kod {course_code} hittades inte.")
