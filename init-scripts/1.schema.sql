@@ -115,4 +115,5 @@ FROM
     JOIN Student S ON SE.studentId = S.id
     JOIN StudentStatus SS ON S.statusId = SS.id
     JOIN Course C ON SE.courseCode = C.code
-    JOIN Teacher T ON C.responsibleTeacherId = T.id;
+    JOIN Teacher T ON C.responsibleTeacherId = T.id
+ORDER BY SS.statusName;
