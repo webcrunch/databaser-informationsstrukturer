@@ -48,6 +48,7 @@ En administratörsroll (med rättigheter att skapa/radera användare och kurser)
 | | `completionDate` | DATE | - | N/A |
 
 **(Notera:** Tabellen StudentEnrollment använder en Sammansatt Primärnyckel (PK), vilken består av studentId och courseCode. Båda dessa fält fungerar även som Främmande Nycklar (FK) till respektive entitet.)
+
 ## 🔗 3. Relationer och Motivering
 
 ### → 3.1 One-to-Many (1-M) Relation
@@ -149,6 +150,7 @@ Detta skyddar mot "hängande referenser" (orphaned records) och är ett fundamen
 För att upprätthålla referensintegritet (säkerställa att inga "hängande referenser" skapas) har jag använt två medvetna och olika strategier för ON DELETE i databasen:
 
 ####  ON DELETE RESTRICT (Standardregeln) - Skydda Kärndata
+
 I de flesta relationer har jag använt standardbeteendet, som är ON DELETE RESTRICT (eller NO ACTION). Detta fungerar som ett viktigt skyddsnät.
 
 Relation: Teacher (1) -> Course (M)
@@ -157,7 +159,7 @@ Relation: StudentStatus (1) -> Student (M)
 
 Motivering (Exempel): Om en användare försöker radera en lärare (t.ex. Anna Andersson) som fortfarande är listad som kursansvarig (responsibleTeacherId) för tre kurser, kommer databasen att blockera raderingen.
 
-Detta är avsiktligt. Det tvingar applikationen (eller administratören) att först vidta en åtgärd – antingen måste kurserna raderas eller, mer troligt, omallokeras till en ny lärare – innan den ursprungliga läraren kan tas bort. Samma logik gäller för StudentStatus: databasen förhindrar att statusen "Aktiv" raderas om studenter fortfarande använder den.
+Detta är avsiktligt. Det tvingar applikationen (eller administratören) att först vidta en åtgärd – antingen måste kurserna raderas eller, mer troligt, förflyttas till en ny lärare – innan den ursprungliga läraren kan tas bort. Samma logik gäller för StudentStatus: databasen förhindrar att statusen "Aktiv" raderas om det är studenter som har den status fortfande kopplat till sig.
 
 Detta skyddar systemet från att hamna i ett korrupt tillstånd där kurser saknar ansvariga lärare.
 
@@ -175,8 +177,8 @@ Om en Student raderas: Om student "Sara Svensson" (ID 1) tas bort från systemet
 Om en Kurs raderas: Om kursen 'DB101' raderas (kanske lades ner), är alla registreringar för den kursen också irrelevanta. ON DELETE CASCADE raderar dem automatiskt.
 
 ## ⚡ 7. Indexering
-### 1. Student.email (Sökoptimering): 
+### 7.1. Student.email (Sökoptimering): 
 E-postadressen är, tillsammans med personnumret, en av de primära metoderna för att söka efter en specifik student. Utan ett index skulle databasen behöva göra en "table scan" vid varje sökning.
 
-#### 2. Student.statusId (Join-optimering): 
+### 7.2. Student.statusId (Join-optimering): 
 Eftersom statusId är en främmande nyckel som används frekvent för att koppla ihop Student och StudentStatus (i JOIN-satser), snabbar detta index upp hämtningen av studentlistor där vi vill visa statusnamnet (t.ex. "Aktiv") istället för bara siffran..
