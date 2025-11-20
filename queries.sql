@@ -111,6 +111,14 @@ WHERE
 -- #####################################################################
 
 -- 9. Skapa en Förenklad Vy för SELECT-frågor
+/*
+Syfte: Abstraktion av komplexa kopplingar för slutanvändaren.
+
+Beskrivning:
+Denna vy sammanställer data från fyra olika tabeller (Student, Status, Kurs, Inskrivning).
+Istället för att administratören ska behöva skriva en komplex JOIN-sats varje gång de vill se en students betyg,
+kan de enkelt göra en SELECT * mot denna vy. Den visar läsbara namn (t.ex. "Aktiv") istället för kryptiska ID-nummer.
+*/
 CREATE VIEW v_FullEnrollmentDetails AS
 SELECT
     CONCAT(S.firstName, ' ', S.lastName) AS studentFullName,
@@ -125,6 +133,14 @@ FROM
     JOIN Course AS C ON SE.courseCode = C.code;
 
 -- Exempelanvändning:
+/*
+Syfte: Administrativt underlag för lärare och administration (Kontaktlista).
+
+Beskrivning:
+Till skillnad från vyn ovan som fokuserar på prestation (betyg/kursnamn), fokuserar denna vy på studentens identitet och kontaktuppgifter.
+Den är designad för att snabbt kunna generera klasslistor där man ser personnummer och e-postadress kopplat till en specifik kurskod.
+Detta underlättar när lärare behöver kontakta alla studenter i en specifik kurs.
+*/
 SELECT * FROM v_FullEnrollmentDetails;
 
 -- 9b. Enkel vy för klasslistor
@@ -141,6 +157,15 @@ FROM
 SELECT * FROM v_CourseStudents;
 
 -- 10. Skapa en Rapportvy (Kursbeläggning/Topplista)
+/*
+Syfte: Beslutsunderlag och resursplanering (Statistik).
+
+Beskrivning:
+Detta är en aggregerande vy som inte visar enskilda individer, utan statistik på makronivå.
+Genom att gruppera på kurs och räkna antalet studenter (COUNT) skapas en topplista över kursbeläggning.
+Denna vy är användbar för ledningen för att se vilka kurser som är mest populära eller kräver mest resurser,
+utan att de behöver förstå hur man skriver GROUP BY-satser.
+*/
 CREATE VIEW v_TopCourses AS
 SELECT
     C.code AS courseCode,
@@ -162,6 +187,17 @@ SELECT * FROM v_TopCourses;
 -- #####################################################################
 
 -- 11. Rapport som använder HAVING (VG)
+
+Syfte: Rapport för att identifiera högpresterande studenter (över 30 hp).
+/*
+Logik:
+1. Jag hämtar alla studenter och deras kurser via JOINs.
+2. Jag grupperar datan per student (GROUP BY) för att samla alla kurser en student läst.
+3. Jag summerar poängen (SUM) för varje grupp.
+4. VIKTIGT: Jag använder HAVING istället för WHERE för filtreringen.
+   - WHERE filtrerar rader *innan* summeringen görs (vilket inte går här).
+   - HAVING filtrerar *efter* att poängen är summerade, vilket låter mig välja ut de som har > 30 hp.
+*/
 SELECT
     CONCAT(S.firstName, ' ', S.lastName) AS studentFullName,
     SUM(C.credits) AS totalCredits
@@ -178,13 +214,27 @@ HAVING
 ORDER BY totalCredits DESC;
 
 -- 12. En boolesk / CASE-etikett (VG)
+
+/*
+Syfte: Kategorisera kurser baserat på storlek (poäng) för att göra statistiken mer läsbar.
+Logik:
+1. Jag använder en CASE-sats för att omvandla numeriska poäng (credits) till textetiketter:
+- <= 7.5: Liten kurs
+- 8-15: Mellan kurs
+- 15-22.5: Stor kurs
+- > 22.5: Mycket stor kurs
+2. Jag använder WHERE completionDate IS NOT NULL för att endast inkludera data från kurser som faktiskt har avslutats/examinerats.
+3. Jag grupperar på kursnivå för att undvika dubbletter om flera studenter läst samma kurs.
+*/
 SELECT
     C.name AS courseName,
     C.credits AS credits,
     CASE
         WHEN C.credits <= 7.50 THEN 'Liten Kurs (7.5 hp)'
-        WHEN C.credits <= 15.00 THEN 'Mellan Kurs (10-15 hp)'
-        WHEN C.credits <= 22.50 THEN 'Stor Kurs (> 15 hp)'
+        WHEN C.credits > 7.50
+        AND C.credits <= 15.00 THEN 'Mellan Kurs (8-15 hp)'
+        WHEN C.credits > 15.00
+        AND C.credits <= 22.50 THEN 'Stor Kurs (15-23 hp)'
         ELSE 'Mycket Stor Kurs (> 22.5 hp)'
     END AS courseSize
 FROM
@@ -199,6 +249,16 @@ GROUP BY
 ORDER BY C.credits DESC;
 
 -- 13. Avancerad fråga: Hitta studenter utan pågående inskrivningar
+/*
+Syfte: Identifiera "spökstudenter" – dvs. studenter som är registrerade som 'Aktiv' men inte har någon pågående kurs.
+
+Logik (Left Anti-Join):
+1. Jag hämtar alla studenter.
+2. Jag gör en LEFT JOIN mot Enrollment, MEN med ett specifikt krav: jag letar bara efter kurser där completionDate IS NULL (pågående kurser).
+3. LEFT JOIN innebär att om studenten INTE har någon pågående kurs, behåller databasen ändå raden men sätter alla Enrollment-värden till NULL.
+4. I WHERE-satsen filtrerar jag fram just dessa rader (SE.studentId IS NULL).
+Resultatet är de aktiva studenter som "misslyckades" med att matcha mot en pågående kurs.
+*/
 SELECT S.id, S.firstName, S.lastName, ST.statusName
 FROM
     Student AS S
@@ -210,6 +270,16 @@ WHERE
     AND SE.studentId IS NULL;
 
 -- 14. Avancerad fråga: Genomsnittligt betyg per kurs
+
+/*
+Syfte: Skapa ett statistiskt underlag för lärare genom att beräkna medelbetyg per kurs.
+
+Logik:
+1. Transformation: Eftersom betyg lagras som bokstäver (Kvalitativ data: A-F) kan de inte beräknas matematiskt direkt.
+2. Jag använder en CASE-sats inuti aggregeringsfunktionen för att "översätta" bokstäverna till siffror (A=5, B=4, etc.) on-the-fly.
+3. Filtrering: Jag exkluderar underkända betyg ('U') för att få ett rättvisande snitt på godkända resultat.
+4. Aggregering: AVG() beräknar snittet på de transformerade siffrorna, och ROUND() snyggar till decimalerna.
+*/
 SELECT
     CONCAT(C.name, ' (', C.code, ')') AS courseInfo,
     CONCAT(T.firstName, ' ', T.lastName) AS responsibleTeacher,
