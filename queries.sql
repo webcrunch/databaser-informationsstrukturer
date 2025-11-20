@@ -315,8 +315,11 @@ ORDER BY averageGrade DESC;
 -- #####################################################################
 
 -- Procedur 1: Registrera en student
-DELIMITER /
-/
+/* Logik: Tar emot ID och Kurskod. Utför en INSERT. 
+Databasen hanterar automatiskt att grade/completionDate blir NULL.
+Har valt att hantera det så att det förenklar att lägga till stundeter till kurser. 
+*/
+DELIMITER //
 
 CREATE PROCEDURE RegisterStudentToCourse (
     IN p_studentId INT,
@@ -326,8 +329,7 @@ BEGIN
     INSERT INTO StudentEnrollment (studentId, courseCode)
     VALUES (p_studentId, p_courseCode);
 END
-/
-/
+//
 
 DELIMITER;
 
@@ -337,7 +339,11 @@ CALL RegisterStudentToCourse (10, 'IT400');
 -- Procedur 2: Ge betyg
 
 DELIMITER //
-
+-- Procedur 2: Uppdatera med betyg och datum
+/* Logik: Tar emot ID,Kurskod, betyg och datum för färdigställad . Utför en UPDATE. 
+Databasen hanterar automatiskt att grade/completionDate uppdateras till den stundet som är klar.
+Här säts grade och completionsDate utifrån ID.  
+*/
 CREATE PROCEDURE GraduateStudentToCourse (
     IN p_studentId INT,
     IN p_courseCode VARCHAR(10),
