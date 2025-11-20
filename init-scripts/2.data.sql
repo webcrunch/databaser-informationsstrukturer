@@ -1,5 +1,4 @@
--- Steg 0: Säkerställ att tabellerna är tomma för att kunna köra skriptet flera gånger
--- Detta kräver att du har kört schema.sql först.
+-- Steg 0: Säkerställ att tabellerna är tomma och återställda
 SET FOREIGN_KEY_CHECKS = 0;
 
 SET NAMES 'utf8mb4';
@@ -8,29 +7,27 @@ SET CHARACTER SET utf8mb4;
 
 USE Nexus_DB;
 
-TRUNCATE TABLE `StudentEnrollment`;
+TRUNCATE TABLE StudentEnrollment;
 
-TRUNCATE TABLE `Student`;
+TRUNCATE TABLE Student;
 
-TRUNCATE TABLE `Course`;
+TRUNCATE TABLE Course;
 
-TRUNCATE TABLE `Teacher`;
+TRUNCATE TABLE Teacher;
 
-TRUNCATE TABLE `StudentStatus`;
+TRUNCATE TABLE StudentStatus;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
--- 1. DATA FÖR STUDENTSTATUS (Måste köras först)
+-- 1. DATA FÖR STUDENTSTATUS
 INSERT INTO
-    `StudentStatus` (`id`, `statusName`)
+    StudentStatus (id, statusName)
 VALUES (1, 'Aktiv'),
     (2, 'Examen'),
     (3, 'Utskriven'),
     (4, 'Tjänstledig');
 
--- 2. DATA FÖR TEACHER (Lärare)
--- Utökad lista med fler lärare (ID 1 till 5).
--- Sätter in id för att ha kontroll över vilken teacher som kopplas till vilken kurs.
+-- 2. DATA FÖR TEACHER
 INSERT INTO
     Teacher (
         id,
@@ -76,14 +73,41 @@ VALUES (
     ),
     (
         6,
-        'Mathias',
-        'Thyssel',
-        'Math.Thy@uni.se',
+        'Mattias',
+        'Lysell',
+        'Matt.Lys@uni.se',
         'Databaser & Säkerhet'
+    ),
+    (
+        7,
+        'Sofia',
+        'Lindberg',
+        'sofia.l@uni.se',
+        'Psykologi'
+    ),
+    (
+        8,
+        'Markus',
+        'Wallin',
+        'markus.w@uni.se',
+        'Fysik'
+    ),
+    (
+        9,
+        'Yasmin',
+        'Al-Fayed',
+        'yasmin.a@uni.se',
+        'Datavetenskap'
+    ),
+    (
+        10,
+        'Robert',
+        'Johansson',
+        'robert.j@uni.se',
+        'Historia'
     );
 
--- 3. DATA FÖR COURSE (Kurser)
--- Utökad lista med varierade credits och nya kurser.
+-- 3. DATA FÖR COURSE
 INSERT INTO
     Course (
         code,
@@ -150,11 +174,41 @@ VALUES (
         'Bygg & Infrastruktur',
         24.00,
         5
+    ),
+    (
+        'AI101',
+        'Artificiell Intelligens Grund',
+        7.50,
+        8
+    ),
+    (
+        'FY200',
+        'Kvantmekanik och Relativitet',
+        15.00,
+        7
+    ),
+    (
+        'PS300',
+        'Kognitiv Beteendeterapi C',
+        30.00,
+        6
+    ),
+    (
+        'HI105',
+        'Modern Världshistoria',
+        7.50,
+        10
+    ),
+    (
+        'CC400',
+        'Cloud Computing Architecture',
+        20.00,
+        8
     );
+-- Rättat ID till Yasmin (8) eller behåll (10) om du vill
 
--- 4. DATA FÖR STUDENT (Studenter)
--- Utökad lista med fler studenter (ID 1 till 11) och varierad status.
--- Sätter in id för att ha kontroll över vilken student som kopplas till vilken kurs.
+-- 4. DATA FÖR STUDENT
+-- Notera: Jag har lagt till ID 12-16 manuellt här för att matcha din kolumnlista (id, firstName...)
 INSERT INTO
     Student (
         id,
@@ -173,7 +227,7 @@ VALUES (
         'sara.s@mail.com',
         '2024-08-15',
         1
-    ), -- Aktiv
+    ),
     (
         2,
         'Erik',
@@ -182,7 +236,7 @@ VALUES (
         'erik.e@mail.com',
         '2024-09-01',
         1
-    ), -- Aktiv
+    ),
     (
         3,
         'Lisa',
@@ -191,7 +245,7 @@ VALUES (
         'lisa.l@mail.com',
         '2024-08-15',
         2
-    ), -- Examen
+    ),
     (
         4,
         'Pelle',
@@ -200,7 +254,7 @@ VALUES (
         'pelle.p@mail.com',
         '2024-10-10',
         4
-    ), -- Tjänstledig
+    ),
     (
         5,
         'Maria',
@@ -209,7 +263,7 @@ VALUES (
         'maria.m@mail.com',
         '2024-10-10',
         3
-    ), -- Utskriven
+    ),
     (
         6,
         'Olle',
@@ -218,7 +272,7 @@ VALUES (
         'olle.o@mail.com',
         '2024-11-01',
         1
-    ), -- Aktiv
+    ),
     (
         7,
         'Frida',
@@ -227,7 +281,7 @@ VALUES (
         'frida.f@mail.com',
         '2023-01-10',
         1
-    ), -- Aktiv
+    ),
     (
         8,
         'Gustav',
@@ -236,7 +290,7 @@ VALUES (
         'gustav.g@mail.com',
         '2023-08-20',
         2
-    ), -- Examen
+    ),
     (
         9,
         'Hanna',
@@ -245,7 +299,7 @@ VALUES (
         'hanna.h@mail.com',
         '2024-10-05',
         4
-    ), -- Tjänstledig
+    ),
     (
         10,
         'Johan',
@@ -263,8 +317,55 @@ VALUES (
         'Valle.S@mail.com',
         '2025-03-23',
         1
+    ),
+    -- Nya studenter (fick ID manuellt för att undvika fel):
+    (
+        12,
+        'Alice',
+        'Åkesson',
+        '010101-9999',
+        'alice.a@mail.com',
+        '2023-08-15',
+        1
+    ),
+    (
+        13,
+        'Björn',
+        'Berg',
+        '950505-8888',
+        'bjorn.b@mail.com',
+        '2020-01-10',
+        2
+    ),
+    (
+        14,
+        'Clara',
+        'Ceder',
+        '030303-7777',
+        'clara.c@mail.com',
+        CURDATE(),
+        1
+    ),
+    (
+        15,
+        'Daniel',
+        'Dahl',
+        '991212-6666',
+        'daniel.d@mail.com',
+        '2024-01-01',
+        3
+    ),
+    (
+        16,
+        'Kevin',
+        'Kvist',
+        '000101-5432',
+        'kevin.k@mail.com',
+        CURDATE(),
+        1
     );
--- 5. DATA FÖR STUDENTENROLLMENT (Inskrivningar)
+
+-- 5. DATA FÖR STUDENTENROLLMENT
 INSERT INTO
     StudentEnrollment (
         studentId,
@@ -276,7 +377,7 @@ VALUES
     -- Sara (ID 1)
     (1, 'DB101', 'A', '2024-10-20'),
     (1, 'EK100', 'B', '2024-11-15'),
-    (1, 'DB205', NULL, NULL), -- Pågående
+    (1, 'DB205', NULL, NULL),
 
 -- Erik (ID 2)
 (2, 'DB101', 'B', '2024-10-20'),
@@ -284,43 +385,42 @@ VALUES
 (2, 'JU301', 'G', '2024-11-10'),
 (2, 'MA500', 'A', '2024-12-20'),
 
--- Lisa (ID 3) - Examen
+-- Lisa (ID 3)
 (3, 'DB101', 'A', '2024-10-20'),
 (3, 'DB205', 'B', '2024-12-10'),
 (3, 'JU301', 'A', '2024-11-10'),
 (3, 'IT400', 'C', '2025-01-20'),
 
--- Pelle (ID 4) - Tjänstledig
+-- Pelle (ID 4)
 (4, 'DB205', 'C', '2024-12-10'), (4, 'JU301', 'B', '2024-11-10'),
 
--- Maria (ID 5) - Utskriven
+-- Maria (ID 5)
 (5, 'DB101', 'G', '2024-10-20'), (5, 'EK100', 'U', '2024-12-01'),
 
--- Olle (ID 6) - Aktiv
-(6, 'DB101', NULL, NULL), -- Pågående
-(6, 'DB205', NULL, NULL), -- Pågående
-(6, 'DM105', NULL, NULL), -- Pågående
+-- Olle (ID 6)
+(6, 'DB101', NULL, NULL),
+(6, 'DB205', NULL, NULL),
+(6, 'DM105', NULL, NULL),
 
--- Frida (ID 7) - Aktiv
+-- Frida (ID 7)
 (7, 'EK100', 'A', '2023-03-15'),
 (7, 'EK210', 'B', '2024-06-01'),
 (7, 'JU301', 'A', '2023-12-10'),
-(7, 'SY501', NULL, NULL), -- Pågående
+(7, 'SY501', NULL, NULL),
 
--- Gustav (ID 8) - Examen
+-- Gustav (ID 8)
 (8, 'DM105', 'B', '2023-10-25'),
 (8, 'IT400', 'A', '2024-01-10'),
 (8, 'DB101', 'B', '2023-09-01'),
 
--- Hanna (ID 9) - Tjänstledig
+-- Hanna (ID 9)
 (9, 'DB101', NULL, NULL),
 
--- Johan (ID 10) - Aktiv
-(10, 'DB101', NULL, NULL), (10, 'EK100', NULL, NULL);
+-- Johan (ID 10)
+(10, 'DB101', NULL, NULL), (10, 'EK100', NULL, NULL),
 
--- Valle (ID 11 ) -Aktiv
-(11, 'BI304', NULL, NULL) -- Pågående
-,
+-- Valle (ID 11)
+(11, 'BI304', NULL, NULL),
 (
     11,
     'IT400',
@@ -332,4 +432,29 @@ VALUES
     'EK210',
     'B',
     '2024-06-01'
-)
+),
+
+-- Alice (ID 12)
+(12, 'AI101', NULL, NULL), ( 12, 'FY200', 'A', '2024-12-20' ),
+
+-- Björn (ID 13)
+(
+    13,
+    'HI105',
+    'B',
+    '2022-06-05'
+),
+(
+    13,
+    'PS300',
+    'A',
+    '2023-01-15'
+),
+
+-- Clara (ID 14)
+(14, 'AI101', NULL, NULL),
+
+-- Daniel (ID 15)
+( 15, 'CC400', 'U', '2024-03-10' );
+
+-- Kevin (ID 16) har inga kurser (för att testa fråga 13)
