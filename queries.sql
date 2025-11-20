@@ -110,8 +110,9 @@ WHERE
 -- KRAV: VYER (Views)
 -- #####################################################################
 
--- 9. Skapa en Förenklad Vy för SELECT-frågor
+
 /*
+-- 9. Skapa en Förenklad Vy för SELECT-frågor
 Syfte: Abstraktion av komplexa kopplingar för slutanvändaren.
 
 Beskrivning:
@@ -133,7 +134,12 @@ FROM
     JOIN Course AS C ON SE.courseCode = C.code;
 
 -- Exempelanvändning:
+SELECT * FROM v_FullEnrollmentDetails;
+
+
+
 /*
+-- 9b. Enkel vy för klasslistor
 Syfte: Administrativt underlag för lärare och administration (Kontaktlista).
 
 Beskrivning:
@@ -141,9 +147,8 @@ Till skillnad från vyn ovan som fokuserar på prestation (betyg/kursnamn), foku
 Den är designad för att snabbt kunna generera klasslistor där man ser personnummer och e-postadress kopplat till en specifik kurskod.
 Detta underlättar när lärare behöver kontakta alla studenter i en specifik kurs.
 */
-SELECT * FROM v_FullEnrollmentDetails;
 
--- 9b. Enkel vy för klasslistor
+
 CREATE VIEW v_CourseStudents AS
 SELECT CONCAT(
         S.firstName, ' ', S.lastName, ' (', S.personNr, ')'
@@ -156,8 +161,9 @@ FROM
 -- Exempelanvändning :
 SELECT * FROM v_CourseStudents;
 
--- 10. Skapa en Rapportvy (Kursbeläggning/Topplista)
+
 /*
+-- 10. Skapa en Rapportvy (Kursbeläggning/Topplista)
 Syfte: Beslutsunderlag och resursplanering (Statistik).
 
 Beskrivning:

@@ -181,4 +181,56 @@ Om en Kurs raderas: Om kursen 'DB101' raderas (kanske lades ner), är alla regis
 E-postadressen är, tillsammans med personnumret, en av de primära metoderna för att söka efter en specifik student. Utan ett index skulle databasen behöva göra en "table scan" vid varje sökning.
 
 ### 7.2. Student.statusId (Join-optimering): 
-Eftersom statusId är en främmande nyckel som används frekvent för att koppla ihop Student och StudentStatus (i JOIN-satser), snabbar detta index upp hämtningen av studentlistor där vi vill visa statusnamnet (t.ex. "Aktiv") istället för bara siffran..
+Eftersom statusId är en främmande nyckel som används frekvent för att koppla ihop Student och StudentStatus (i JOIN-satser), snabbar detta index upp hämtningen av studentlistor där vi vill visa statusnamnet (t.ex. "Aktiv") istället för bara siffran.
+
+
+## 📊 8. Avancerad Dataanalys och Aggregering
+För att kunna dra slutsatser ur datan räcker det inte alltid med enkla SELECT-satser. Jag har använt mer avancerade SQL-koncept för att skapa meningsfulla rapporter.
+
+### 8.1 Filtrering av Grupper (HAVING vs WHERE)
+I rapporten som identifierar studenter med mer än 30 högskolepoäng (fråga 11) används klausulen HAVING istället för WHERE.
+
+Motivering: Detta val baseras på SQL-motorns exekveringsordning.
+
+WHERE filtrerar rader innan någon gruppering eller uträkning sker. Det är omöjligt att använda WHERE för att filtrera på en summa (SUM), eftersom summan inte existerar ännu.
+
+GROUP BY samlar raderna per student.
+
+HAVING appliceras efter att datan har grupperats och summerats.
+
+Därför är HAVING totalCredits > 30 det enda korrekta sättet att filtrera bort studenter baserat på deras totala poängsumma.
+
+### 8.2 Datatransformation (CASE)
+I rapporten för kursstorlekar (fråga 12) används en CASE-sats.
+
+Motivering: Syftet är att omvandla kvantitativ data (exakta poäng, t.ex. 7.5 eller 15.0) till kvalitativ data (kategorier som "Liten", "Mellan", "Stor") direkt i databaslagret. Genom att flytta denna logik till SQL-frågan avlastas applikationen/frontend från att behöva göra dessa beräkningar. Det standardiserar också begreppen; definitionen av vad som är en "Stor Kurs" blir densamma oavsett vem som hämtar datan.
+
+## 👁️ 9. Vyer (Views) och Abstraktion
+Jag har implementerat tre specifika vyer för att skapa ett abstraktionslager mellan den komplexa tabellstrukturen och slutanvändaren.
+
+### 9.1 Abstraktion av Komplexitet (v_FullEnrollmentDetails)
+Syfte: Förenkling för administratörer. Denna vy döljer komplexiteten av att behöva sammanfoga (JOIN) fyra olika tabeller (Student, StudentStatus, Course, StudentEnrollment). Istället för att skriva en lång SQL-fråga varje gång man vill se en students betyg och status, kan användaren enkelt köra SELECT * FROM v_FullEnrollmentDetails.
+
+### 9.2 Administrativt Stöd (v_CourseStudents)
+Syfte: Kontaktlistor och operativt arbete. Denna vy är skräddarsydd för att generera klasslistor. Den fokuserar på kontaktuppgifter (e-post, personnummer) kopplat till kurskoder. Genom att spara detta som en vy säkerställer jag att alla lärare använder samma underlag när de ska kontakta sina studenter.
+
+### 9.3 Analytisk Statistik (v_TopCourses)
+Syfte: Beslutsunderlag. Denna vy skiljer sig från de andra genom att den visar aggregerad data (statistik) istället för individdata. Den räknar automatiskt antalet studenter per kurs (COUNT). Detta ger ledningen en direkt överblick över kursbeläggningen utan att de behöver förstå hur man skriver GROUP BY-satser.
+
+## ⚙️ 10. Stored Procedures (Lagrade Procedurer)
+
+Istället för att applikationen skickar råa INSERT eller UPDATE-satser direkt mot tabellerna, har jag kapslat in affärslogiken i procedurer (RegisterStudentToCourse och GraduateStudentToCourse). Detta fungerar som ett skyddande API-lager direkt i databasen.
+
+### 10.1 Generell Motivering: Säkerhet och Underhåll
+Genom att styra datamanipulation via procedurer uppnår vi två saker:
+
+**Abstraktion:** Om tabellstrukturen ändras i framtiden (t.ex. namnbyte på en kolumn), behöver vi bara uppdatera koden inuti proceduren. Alla externa applikationer som kallar på proceduren kan fortsätta fungera utan ändringar.
+
+**Åtkomstkontroll:** Vi kan begränsa användarens rättigheter så att de bara får köra procedurer, men inte har rättighet att köra godtyckliga DELETE eller UPDATE-satser direkt mot tabellerna.
+
+### 10.2 Specifik Motivering: GraduateStudentToCourse (Uppdatering)
+Proceduren för att betygsätta en student (GraduateStudentToCourse) löser två specifika problem kring dataintegritet:
+
+**Datakonsistens (Atomär handling):** I verksamheten hänger ett betyg (grade) ihop med ett examensdatum (completionDate). Om applikationen skulle hantera detta separat finns risken för "trasig data" (t.ex. att en student får ett betyg men saknar datum). Denna procedur tvingar systemet att ange både betyg och datum samtidigt, vilket garanterar att en avslutad kurs alltid är komplett.
+
+**Säkerhet vid UPDATE:** Att tillåta råa UPDATE-satser från en applikation är riskfyllt. Om en utvecklare missar en WHERE-sats i koden kan hela tabellen skrivas över av misstag. Genom att använda en procedur låser vi logiken så att uppdateringen alltid begränsas till exakt en student och en kurskod. Databasen agerar "grindvakt" och förhindrar massuppdateringar av misstag.
