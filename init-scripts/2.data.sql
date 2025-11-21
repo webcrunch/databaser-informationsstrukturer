@@ -191,7 +191,7 @@ VALUES (
         'PS300',
         'Kognitiv Beteendeterapi C',
         30.00,
-        6
+        7
     ),
     (
         'HI105',
