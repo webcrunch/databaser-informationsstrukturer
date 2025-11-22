@@ -147,7 +147,7 @@ Detta uppfyller det fundamentala kravet på referensintegritet genom att omöjli
 
 #### 6.3.1 ⛓️ Hantering av Relationer vid Radering (ON DELETE)
 
-För att upprätthålla referensintegritet (säkerställa att inga "hängande referenser" skapas) har jag använt två medvetna och olika strategier för ON DELETE i databasen:
+För att upprätthålla referensintegritet (säkerställa att inga "hängande referenser" skapas) har jag använt mig medvetet av två olika strategier för ON DELETE i databasen:
 
 ####  ON DELETE RESTRICT (Standardregeln) - Skydda Kärndata
 
@@ -164,7 +164,7 @@ Detta är avsiktligt. Det tvingar applikationen (eller administratören) att fö
 Detta skyddar systemet från att hamna i ett korrupt tillstånd där kurser saknar ansvariga lärare.
 
 ####  ON DELETE CASCADE - Automatisk Uppstädning
-I ett specifikt fall har jag medvetet valt ON DELETE CASCADE för att automatisera uppstädning av beroende data.
+I ett specifikt fall har jag valt att använda mig av metoden ON DELETE CASCADE för att automatisera uppstädning av beroende data.
 
 Relation: Student (1) -> StudentEnrollment (M)
 
@@ -174,7 +174,7 @@ Motivering (Exempel): Kopplingstabellen StudentEnrollment innehåller data (som 
 
 Om en Student raderas: Om student "Sara Svensson" (ID 1) tas bort från systemet, är hennes gamla kursregistreringar (t.ex. hennes betyg i 'DB101') inte längre relevanta. Tack vare ON DELETE CASCADE kommer databasen automatiskt att städa bort alla rader i StudentEnrollment som tillhörde "Sara Svensson".
 
-Om en Kurs raderas: Om kursen 'DB101' raderas (kanske lades ner), är alla registreringar för den kursen också irrelevanta. ON DELETE CASCADE raderar dem automatiskt.
+Om en Kurs raderas: Om kursen 'DB101' raderas (kanske att den läggs ner), är alla registreringar för den kursen också irrelevanta. ON DELETE CASCADE raderar dem automatiskt.
 
 ## ⚡ 7. Indexering
 ### 7.1. Student.email (Sökoptimering): 
