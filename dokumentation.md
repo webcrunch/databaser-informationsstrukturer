@@ -139,11 +139,11 @@ Exempel: Student.firstName, Course.name, Teacher.department måste alltid ha ett
 
 ### ⛓️ 6.3 Främmande Nycklar (Foreign Keys – FK)
 
-Främmande nycklar (**responsibleTeacherId**, **studentId**, **courseCode**) används för att upprätthålla referensintegritet.
+De främmande nycklarna (**responsibleTeacherId, studentId, courseCode**) säkerställer att alla relationer i databasen förblir valida. 
 
-Detta förhindrar att en kurs registreras med en responsibleTeacherId som inte existerar i Teacher-tabellen, och förhindrar att studentregistreringar kopplas till studenter eller kurser som inte finns.
+Genom att tvinga fram en koppling till existerande rader i huvudtabellerna (**Teacher, Student, Course**) förhindras uppkomsten av **"hängande referenser" (orphaned records)**. 
 
-Detta skyddar mot "hängande referenser" (orphaned records) och är ett fundamentalt krav för en relationsdatabas.
+Detta uppfyller det fundamentala kravet på referensintegritet genom att omöjliggöra kopplingar till data som inte finns.
 
 #### 6.3.1 ⛓️ Hantering av Relationer vid Radering (ON DELETE)
 
