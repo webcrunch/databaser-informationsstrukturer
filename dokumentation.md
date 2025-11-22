@@ -37,7 +37,7 @@ En administratörsroll (med rättigheter att skapa/radera användare och kurser)
 | | `firstName` | VARCHAR(100) | - | N/A |
 | | `lastName` | VARCHAR(100) | - | N/A |
 | | `personNr` | VARCHAR(13) | UNIQUE | N/A |
-| | `email` | VARCHAR(255) | - | N/A |
+| | `email` | VARCHAR(255) | UNIQUE | N/A |
 | | `registeredDate` | DATE | - | N/A |
 | | `statusId` | INTEGER | **FK** | `StudentStatus(id)` |
 | **StudentStatus** | `id` | INTEGER | **PK** | N/A |
