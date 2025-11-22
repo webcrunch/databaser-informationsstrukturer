@@ -348,7 +348,8 @@ DELIMITER //
 -- Procedur 2: Uppdatera med betyg och datum
 /* Logik: Tar emot ID,Kurskod, betyg och datum för färdigställad . Utför en UPDATE. 
 Databasen hanterar automatiskt att grade/completionDate uppdateras till den stundet som är klar.
-Här säts grade och completionsDate utifrån ID.  
+Här säts grade och completionsDate utifrån ID.
+Har valt att göra så att det är enklare att uppdatera färdig kurs för elev.
 */
 CREATE PROCEDURE GraduateStudentToCourse (
     IN p_studentId INT,
