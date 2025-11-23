@@ -22,6 +22,8 @@ För att köra systemet, se till att du har Docker och Docker Compose installera
 |analytics|	Analys & Tidsseriedata|	duckdb, influxdb, grafana|
 |tools|	Modelleringsverktyg	|drawdb, drawio|
 |app |Endast backend-applikationen |api|
+
+
 Starta applikationen och databasen:
 ```bash
 docker-compose up --profile {profile} -d 
