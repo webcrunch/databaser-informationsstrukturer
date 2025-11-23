@@ -10,13 +10,18 @@ API:et är komplett med fullständiga CRUD-operationer samt avancerade databasfu
 
 För att köra systemet, se till att du har Docker och Docker Compose installerat.
 
-Har lagt in olika profiler:
-
-| Kategori | Gör |
-| all | startar alla kontainers | 
-| nexus | startar allt som har till skolarbetet att göra |
-| sql| startar alla sql databaser|
-|mongo | startar allt med nosql databaser||
+| Kategori | Startar | Tjänster som startar
+| :--- | :--- | :--- | 
+| all |	Startar hela miljön |Alla tjänster i filen |
+|pg	| PostgreSQL-stacken	| postgres_db, pgadmin |
+|sql|	Alla SQL-databaser & verktyg	| mysql_db, mysql_nexus_db, adminer|
+|nexus|	Nexus-projektet (DB + API)|	mysql_nexus_db, adminer, api|
+|nosql	|   Dokumentdatabaser (MongoDB)|	mongo, mongo_express|
+|redis	|Caching & Key-Value	|redis_cache, redis_commander|
+|graph	|Grafdatabaser	|neo4j, arangodb|
+|analytics|	Analys & Tidsseriedata|	duckdb, influxdb, grafana|
+|tools|	Modelleringsverktyg	|drawdb, drawio|
+|app |Endast backend-applikationen |api|
 Starta applikationen och databasen:
 ```bash
 docker-compose up --profile {profile} -d 
