@@ -1,6 +1,5 @@
-Databas: NexusDB
 # Teoretisk Rapport / Student- och Kursadministrationssystem:
-
+Databas: NexusDB
 ## 🎯 1. Domän och Syfte
 
  #### Domän: 
@@ -14,7 +13,7 @@ Databas: NexusDB
 **Student:** En individ som registreras i systemet och kan skrivas in på kurser.
 **Lärare:** En individ som är anställd och har ansvar för en eller flera kurser.
 
-En administratörsroll (med rättigheter att skapa/radera användare och kurser) är inte en del av själva databasmodellen, utan förväntas hanteras av applikationslogiken ,t.ex. ett API, som ansluter till databasen.
+En administratörsroll (med rättigheter att skapa/radera användare och kurser) är inte en del av själva databasmodellen, utan förväntas hanteras av applikationslogiken , genom t.ex. ett API, som ansluter till databasen.
 
 ## 🗃️ 2. Databasöversikt och Modell
 ![ER bild över systemet](Images/Diagram2.png)
@@ -57,7 +56,7 @@ En administratörsroll (med rättigheter att skapa/radera användare och kurser)
 
 **Implementering:** Detta realiseras genom den främmande nyckeln responsibleTeacherId i tabellen Course, som pekar på primärnyckeln i Teacher.
 
-**Motivering:** Denna separering minskar dataredundans. Istället för att duplicera lärarens information (namn, e-post, avdelning) för varje kurs de ansvarar för, lagras endast en liten integer-nyckel.
+**Motivering:** Denna separering minskar dataredundans. Istället för att duplicera lärarens information (namn, e-post, avdelning) för varje kurs de ansvarar för, lagras endast en referens till lärarens ID (heltal).
 
 ### ↔️ 3.2 Many-to-Many (M-M) Relation
 
@@ -237,6 +236,16 @@ Genom att styra datamanipulation via procedurer uppnår vi två saker:
 ### 10.2 Specifik Motivering: GraduateStudentToCourse (Uppdatering)
 Proceduren för att betygsätta en student (GraduateStudentToCourse) löser två specifika problem kring dataintegritet:
 
-**Datakonsistens (Atomär handling):** I verksamheten hänger ett betyg (grade) ihop med ett examensdatum (completionDate). Om applikationen skulle hantera detta separat finns risken för "trasig data" (t.ex. att en student får ett betyg men saknar datum). Denna procedur tvingar systemet att ange både betyg och datum samtidigt, vilket garanterar att en avslutad kurs alltid är komplett.
+**Datakonsistens (Atomär handling):** 
+I verksamheten hänger ett betyg (**grade**) ihop med ett examensdatum (**completionDate**). 
+Om applikationen skulle hantera detta separat finns risken för "trasig data" (t.ex. att en student får ett betyg men saknar datum). 
 
-**Säkerhet vid UPDATE:** Att tillåta råa UPDATE-frågor från en applikation är riskfyllt. Om en utvecklare missar en WHERE-sats i koden kan hela tabellen skrivas över av misstag. Genom att använda en procedur låser vi logiken så att uppdateringen alltid begränsas till exakt en student och en kurskod. Databasen agerar "grindvakt" och förhindrar massuppdateringar av misstag.
+Denna procedur tvingar systemet att ange både betyg och datum samtidigt. 
+
+vilket garanterar att en avslutad kurs alltid är komplett.
+
+**Säkerhet vid UPDATE:** Att tillåta råa UPDATE-frågor från en applikation är riskfyllt. 
+
+Om en utvecklare missar en WHERE-sats i koden kan hela tabellen skrivas över av misstag. Genom att använda en procedur låser vi logiken så att uppdateringen alltid begränsas till exakt en student och en kurskod. 
+
+Databasen agerar "grindvakt" och förhindrar massuppdateringar av misstag.
