@@ -337,23 +337,20 @@ CREATE PROCEDURE RegisterStudentToCourse (
 BEGIN
     INSERT INTO StudentEnrollment (studentId, courseCode)
     VALUES (p_studentId, p_courseCode);
-END
-//
+END //
 
-DELIMITER;
+DELIMITER ;
 
 -- Exempel:
 CALL RegisterStudentToCourse (10, 'IT400');
 
--- Procedur 2: Ge betyg
-
-DELIMITER //
 -- Procedur 2: Uppdatera med betyg och datum
-/* Logik: Tar emot ID,Kurskod, betyg och datum för färdigställad . Utför en UPDATE. 
-Databasen hanterar automatiskt att grade/completionDate uppdateras till den stundet som är klar.
-Här säts grade och completionsDate utifrån ID.
-Har valt att göra så att det är enklare att uppdatera färdig kurs för elev.
+/* Logik: Tar emot ID, Kurskod, betyg och datum. Utför en UPDATE. 
+Databasen hanterar automatiskt att grade/completionDate uppdateras för den specifika studenten.
+Säkerställer atomär uppdatering (både betyg och datum samtidigt).
 */
+DELIMITER //
+
 CREATE PROCEDURE GraduateStudentToCourse (
     IN p_studentId INT,
     IN p_courseCode VARCHAR(10),
@@ -364,10 +361,9 @@ BEGIN
     UPDATE StudentEnrollment 
     SET grade = p_courseGrade, completionDate = p_completionDate
     WHERE studentId = p_studentId AND courseCode = p_courseCode;
-END
-//
+END //
 
 DELIMITER ;
 
 -- Exempel:
-CALL GraduateStudentToCourse ( 10, 'IT400', 'B', '2025-11-10' );
+CALL GraduateStudentToCourse ( 10, 'IT400', 'B', '2025-11-10');
