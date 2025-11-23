@@ -278,30 +278,33 @@ WHERE
 -- 14. Avancerad fråga: Genomsnittligt betyg per kurs
 
 /*
-Syfte: Skapa ett statistiskt underlag för lärare genom att beräkna medelbetyg per kurs.
+Syfte: Skapa ett statistiskt underlag för lärare genom att beräkna medelbetyg per kurs och visa underlagets storlek.
 
 Logik:
-1. Transformation: Eftersom betyg lagras som bokstäver (Kvalitativ data: A-F) kan de inte beräknas matematiskt direkt.
-2. Jag använder en CASE-sats inuti aggregeringsfunktionen för att "översätta" bokstäverna till siffror (A=5, B=4, etc.) on-the-fly.
-3. Filtrering: Jag exkluderar underkända betyg ('U') för att få ett rättvisande snitt på godkända resultat.
-4. Aggregering: AVG() beräknar snittet på de transformerade siffrorna, och ROUND() snyggar till decimalerna.
+1. Transformation: Eftersom betyg lagras som bokstäver (Kvalitativ data: A-F) använder jag en CASE-sats inuti aggregeringen för att "översätta" dem till siffror (A=5, B=4, etc.) on-the-fly.
+2. Filtrering: Jag exkluderar underkända betyg ('U') och NULL via WHERE-satsen. Detta innebär att statistiken enbart speglar prestationerna hos de studenter som klarat kursen.
+3. Kontext (COUNT): Jag inkluderar en räknare (gradedStudents). Detta är avgörande för att bedöma medelvärdets statistiska signifikans – ett högt snitt baserat på 50 studenter väger tyngre än ett snitt baserat på en enskild student.
+4. Aggregering: AVG() beräknar det numeriska snittet och ROUND() snyggar till decimalerna.
 */
 SELECT
     CONCAT(C.name, ' (', C.code, ')') AS courseInfo,
     CONCAT(T.firstName, ' ', T.lastName) AS responsibleTeacher,
-    ROUND(
-        AVG(
-            CASE
-                WHEN SE.grade = 'A' THEN 5
-                WHEN SE.grade = 'B' THEN 4
-                WHEN SE.grade = 'C' THEN 3
-                WHEN SE.grade = 'G'
-                OR SE.grade = 'D' THEN 2
-                ELSE NULL
-            END
-        ),
-        2
-    ) AS averageGrade
+
+-- NY RAD: Räknar antalet studenter som bidrar till snittet
+COUNT(SE.studentId) AS gradedStudents,
+ROUND(
+    AVG(
+        CASE
+            WHEN SE.grade = 'A' THEN 5
+            WHEN SE.grade = 'B' THEN 4
+            WHEN SE.grade = 'C' THEN 3
+            WHEN SE.grade = 'G'
+            OR SE.grade = 'D' THEN 2
+            ELSE NULL
+        END
+    ),
+    2
+) AS averageGrade
 FROM
     StudentEnrollment AS SE
     JOIN Course AS C ON SE.courseCode = C.code
