@@ -26,6 +26,10 @@ För att köra systemet, se till att du har Docker och Docker Compose installera
 
 Starta applikationen och databasen:
 ```bash
+docker-compose up --profile nexus -d 
+```
+eller välj en profil:
+```bash
 docker-compose up --profile {profile} -d 
 ```
 
