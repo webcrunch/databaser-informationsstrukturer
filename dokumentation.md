@@ -173,7 +173,7 @@ Motivering (Exempel): Kopplingstabellen StudentEnrollment innehåller data (som 
 
 Om en Student raderas: Om student "Sara Svensson" (ID 1) tas bort från systemet, är hennes gamla kursregistreringar (t.ex. hennes betyg i 'DB101') inte längre relevanta. Tack vare ON DELETE CASCADE kommer databasen automatiskt att städa bort alla rader i StudentEnrollment som tillhörde "Sara Svensson".
 
-Om en Kurs raderas: Om kursen 'DB101' raderas (kanske att den läggs ner), är alla registreringar för den kursen också irrelevanta. ON DELETE CASCADE raderar dem automatiskt.
+Om en Kurs raderas: Om kursen 'DB101' raderas (exempelvis om den läggs ner), är alla registreringar för den kursen också irrelevanta. ON DELETE CASCADE raderar dem automatiskt.
 
 ## ⚡ 7. Indexering
 
@@ -224,14 +224,14 @@ Syfte: Beslutsunderlag. Denna vy skiljer sig från de andra genom att den visar 
 
 ## ⚙️ 10. Stored Procedures (Lagrade Procedurer)
 
-Istället för att applikationen skickar råa INSERT eller UPDATE-frågor direkt mot tabellerna, har jag kapslat in affärslogiken i procedurer (RegisterStudentToCourse och GraduateStudentToCourse). Detta fungerar som ett skyddande API-lager direkt i databasen.
+Istället för att applikationen skickar råa INSERT eller UPDATE-kommandon direkt mot tabellerna, har jag kapslat in affärslogiken i procedurer (RegisterStudentToCourse och GraduateStudentToCourse). Detta fungerar som ett skyddande API-lager direkt i databasen.
 
 ### 10.1 Generell Motivering: Säkerhet och Underhåll
 Genom att styra datamanipulation via procedurer uppnår vi två saker:
 
 **Abstraktion:** Om tabellstrukturen ändras i framtiden (t.ex. namnbyte på en kolumn), behöver vi bara uppdatera koden inuti proceduren. Alla externa applikationer som kallar på proceduren kan fortsätta fungera utan ändringar.
 
-**Åtkomstkontroll:** Vi kan begränsa användarens rättigheter så att de bara får köra procedurer, men inte har rättighet att köra godtyckliga DELETE eller UPDATE-frågor direkt mot tabellerna.
+**Åtkomstkontroll:** Vi kan begränsa användarens rättigheter så att de bara får köra procedurer, men inte har rättighet att köra godtyckliga DELETE eller UPDATE-fråkommandon direkt mot tabellerna.
 
 ### 10.2 Specifik Motivering: GraduateStudentToCourse (Uppdatering)
 Proceduren för att betygsätta en student (GraduateStudentToCourse) löser två specifika problem kring dataintegritet:
@@ -240,11 +240,9 @@ Proceduren för att betygsätta en student (GraduateStudentToCourse) löser två
 I verksamheten hänger ett betyg (**grade**) ihop med ett examensdatum (**completionDate**). 
 Om applikationen skulle hantera detta separat finns risken för "trasig data" (t.ex. att en student får ett betyg men saknar datum). 
 
-Denna procedur tvingar systemet att ange både betyg och datum samtidigt. 
+Denna procedur tvingar systemet att ange både betyg och datum samtidigt, vilket garanterar att en avslutad kurs alltid är komplett
 
-vilket garanterar att en avslutad kurs alltid är komplett.
-
-**Säkerhet vid UPDATE:** Att tillåta råa UPDATE-frågor från en applikation är riskfyllt. 
+**Säkerhet vid UPDATE:** Att tillåta råa UPDATE-kommandon från en applikation är riskfyllt. 
 
 Om en utvecklare missar en WHERE-sats i koden kan hela tabellen skrivas över av misstag. Genom att använda en procedur låser vi logiken så att uppdateringen alltid begränsas till exakt en student och en kurskod. 
 
