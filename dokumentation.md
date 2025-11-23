@@ -219,7 +219,7 @@ Syfte: Förenkling för administratörer. Denna vy döljer komplexiteten av att 
 ### 9.2 Administrativt Stöd (v_CourseStudents)
 Syfte: Kontaktlistor och operativt arbete. Denna vy är skräddarsydd för att generera klasslistor. Den fokuserar på kontaktuppgifter (e-post, personnummer) kopplat till kurskoder. Genom att spara detta som en vy säkerställer jag att alla lärare använder samma underlag när de ska kontakta sina studenter.
 
-### 9.3 Analytisk Statistik (v_TopCourses)
+### 9.3 Analytisk Statistik (v_TopCoursesByEnrollment)
 Syfte: Beslutsunderlag. Denna vy skiljer sig från de andra genom att den visar aggregerad data (statistik) istället för individdata. Den räknar automatiskt antalet studenter per kurs (COUNT). Detta ger ledningen en direkt överblick över kursbeläggningen utan att de behöver förstå hur man skriver GROUP BY-frågor.
 
 ## ⚙️ 10. Stored Procedures (Lagrade Procedurer)

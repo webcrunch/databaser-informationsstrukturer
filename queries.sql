@@ -172,7 +172,7 @@ Genom att gruppera på kurs och räkna antalet studenter (COUNT) skapas en toppl
 Denna vy är användbar för ledningen för att se vilka kurser som är mest populära eller kräver mest resurser,
 utan att de behöver förstå hur man skriver GROUP BY-satser.
 */
-CREATE VIEW v_TopCourses AS
+CREATE VIEW v_TopCoursesByEnrollment AS
 SELECT
     C.code AS courseCode,
     C.name AS courseName,
@@ -186,7 +186,7 @@ GROUP BY
 ORDER BY enrolledStudents DESC;
 
 -- Exempelanvändning:
-SELECT * FROM v_TopCourses;
+SELECT * FROM v_TopCoursesByEnrollment;
 
 -- #####################################################################
 -- VG-KRAV & Avancerade Rapporter
