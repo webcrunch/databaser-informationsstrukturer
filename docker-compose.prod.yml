@@ -81,8 +81,9 @@ services:
     volumes:
       - project_b_data:/var/lib/mysql
 
-  # Bara via SSH-tunnel (ssh -L 8085:127.0.0.1:8085 ...), aldrig publikt: inloggningen går
-  # direkt mot databaserna.
+  # På jarllindquist.com/adminer bakom ett lås: Traefik kräver basic auth innan Adminer ens
+  # visas, så att inte hela internet ser inloggningen mot databaserna. Användare och bcrypt-hash
+  # kommer från .env (ADMINER_BASIC_AUTH, se .env.example). Även via SSH-tunnel på 127.0.0.1:8085.
   adminer:
     image: adminer:latest
     container_name: mai25ma_adminer
@@ -96,8 +97,20 @@ services:
         condition: service_healthy
     networks:
       - db-net
+      - traefik-net
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-net"
+      - "traefik.http.routers.adminer.rule=Host(`jarllindquist.com`) && PathPrefix(`/adminer`)"
+      - "traefik.http.routers.adminer.entrypoints=websecure"
+      - "traefik.http.routers.adminer.tls.certresolver=myresolver"
+      # Låset först, sedan /adminer bort ur sökvägen
+      - "traefik.http.routers.adminer.middlewares=adminer-auth,adminer-replacepath"
+      - "traefik.http.middlewares.adminer-auth.basicauth.users=${ADMINER_BASIC_AUTH:?saknas i .env}"
+      - "traefik.http.middlewares.adminer-auth.basicauth.realm=Adminer"
+      - "traefik.http.middlewares.adminer-replacepath.replacepathregex.regex=^/adminer(.*)"
+      - "traefik.http.middlewares.adminer-replacepath.replacepathregex.replacement=$$1"
+      - "traefik.http.services.adminer.loadbalancer.server.port=8080"
 
   # Nås via Traefik på jarllindquist.com/superapi; ingen port behöver publiceras.
   travelagency_api:
