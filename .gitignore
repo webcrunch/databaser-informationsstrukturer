@@ -46,3 +46,5 @@ desktop.ini
 /logs/          # Neo4j
 /import/        # Neo4j
 /plugins/       # Neo4j
+# Användardata från servern (seed med riktiga personer), aldrig i git
+user-upgrade/02_schema_and_seed.sql
