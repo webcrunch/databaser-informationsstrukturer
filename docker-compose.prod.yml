@@ -1,0 +1,149 @@
+# Produktion på servern: bara de tjänster som körs där, driftsatta av .github/workflows/deploy.yml.
+# docker-compose.yml är fortfarande hela utvecklings- och skolmiljön (nio databaser).
+#
+# - Lösenorden kommer från .env, som deployen skriver från Vault (kv/databases); se .env.example.
+# - Inga databaser eller verktyg publiceras mot internet: portarna är bundna till 127.0.0.1 och
+#   nås via en SSH-tunnel, t.ex. ssh -L 3306:127.0.0.1:3306 root@<server>.
+# - Samma tjänst- och containernamn som tidigare, så att de befintliga containrarna och
+#   volymerna tas över (projektnamnet är mappens namn, databaser-informationsstrukturer).
+services:
+  postgres_db:
+    image: postgres:latest
+    container_name: mai25ma_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?saknas i .env}
+      POSTGRES_DB: main_database
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "127.0.0.1:5444:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: mai25ma_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?saknas i .env}
+      PGADMIN_SERVER_URL: postgres_db:5432
+    ports:
+      - "127.0.0.1:5555:80"
+    depends_on:
+      - postgres_db
+
+  mysql_db:
+    image: mysql:8.0
+    container_name: mai25ma_mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?saknas i .env}
+      MYSQL_DATABASE: main_database
+      MYSQL_USER: user
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?saknas i .env}
+      # Läses av user-upgrade/03_travelagency_user.sh vid första uppstarten
+      TRAVEL_AGENT_PASSWORD: ${TRAVEL_AGENT_PASSWORD:?saknas i .env}
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    ports:
+      - "127.0.0.1:3306:3306"
+    networks:
+      - db-net
+    volumes:
+      - mysql_scratch_data:/var/lib/mysql
+      - ./user-upgrade:/docker-entrypoint-initdb.d
+      - ./my.cnf:/etc/mysql/conf.d/my.cnf:ro
+
+  # ShowTimes databas. ShowTime (cinema_main) ansluter direkt till project_b_mysql:3306 över
+  # traefik-net; Traefik ska inte publicera den (förut en TCP-router på port 3307).
+  mysql_project_b:
+    image: mysql:8.0
+    container_name: project_b_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${PROJECT_B_ROOT_PASSWORD:?saknas i .env}
+      MYSQL_DATABASE: project_b_db
+      MYSQL_USER: b_user
+      MYSQL_PASSWORD: ${PROJECT_B_PASSWORD:?saknas i .env}
+    networks:
+      - db-net
+      - traefik-net
+    labels:
+      - "traefik.enable=false"
+    volumes:
+      - project_b_data:/var/lib/mysql
+
+  # På jarllindquist.com/adminer bakom ett lås: Traefik kräver basic auth innan Adminer ens
+  # visas, så att inte hela internet ser inloggningen mot databaserna. Användare och bcrypt-hash
+  # kommer från .env (ADMINER_BASIC_AUTH, se .env.example). Även via SSH-tunnel på 127.0.0.1:8085.
+  adminer:
+    image: adminer:latest
+    container_name: mai25ma_adminer
+    restart: always
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql_db
+    ports:
+      - "127.0.0.1:8085:8080"
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+    networks:
+      - db-net
+      - traefik-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-net"
+      - "traefik.http.routers.adminer.rule=Host(`jarllindquist.com`) && PathPrefix(`/adminer`)"
+      - "traefik.http.routers.adminer.entrypoints=websecure"
+      - "traefik.http.routers.adminer.tls.certresolver=myresolver"
+      # Låset först, sedan /adminer bort ur sökvägen
+      - "traefik.http.routers.adminer.middlewares=adminer-auth,adminer-replacepath"
+      - "traefik.http.middlewares.adminer-auth.basicauth.users=${ADMINER_BASIC_AUTH:?saknas i .env}"
+      - "traefik.http.middlewares.adminer-auth.basicauth.realm=Adminer"
+      - "traefik.http.middlewares.adminer-replacepath.replacepathregex.regex=^/adminer(.*)"
+      - "traefik.http.middlewares.adminer-replacepath.replacepathregex.replacement=$$1"
+      - "traefik.http.services.adminer.loadbalancer.server.port=8080"
+
+  # Nås via Traefik på jarllindquist.com/superapi; ingen port behöver publiceras.
+  travelagency_api:
+    image: passwordnotsafe/travelagency:latest
+    pull_policy: always
+    container_name: travelagency_api
+    restart: always
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:4999
+      ConnectionStrings__DefaultConnection: "Server=mysql_db;Port=3306;Database=travelagency;Uid=travel_agent;Pwd=${TRAVEL_AGENT_PASSWORD:?saknas i .env};"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.travelagency.rule=Host(`jarllindquist.com`) && PathPrefix(`/superapi`)"
+      - "traefik.http.routers.travelagency.entrypoints=websecure"
+      - "traefik.http.routers.travelagency.tls.certresolver=myresolver"
+      - "traefik.http.routers.travelagency.middlewares=strip-superapi"
+      - "traefik.http.middlewares.strip-superapi.stripprefix.prefixes=/superapi"
+      - "traefik.http.services.travelagency.loadbalancer.server.port=4999"
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+    networks:
+      - traefik-net
+      - db-net
+
+volumes:
+  postgres_data:
+  mysql_scratch_data:
+  project_b_data:
+
+networks:
+  db-net:
+    driver: bridge
+  traefik-net:
+    external: true

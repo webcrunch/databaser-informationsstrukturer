@@ -1,0 +1,91 @@
+name: Deploy
+
+# Driftsätter docker-compose.prod.yml på servern: när den (eller init-skripten) ändras på main,
+# eller för hand (Actions -> Deploy -> Run workflow). Lösenorden kommer från Vault och skrivs till
+# .env på servern; repot är publikt, så inget lösenord får synas i loggen.
+on:
+  push:
+    branches: [main]
+    paths:
+      - docker-compose.prod.yml
+      - user-upgrade/**
+      - postgres-init/**
+      - my.cnf
+      - .github/workflows/deploy.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# En deploy i taget; avbryts aldrig mitt i.
+concurrency:
+  group: databases-deploy
+  cancel-in-progress: false
+
+env:
+  # Mappen på servern; mappens namn är också compose-projektets namn (volymer och nätverk)
+  DEPLOY_DIR: /home/repos/databaser-informationsstrukturer
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Import secrets from Vault
+        uses: hashicorp/vault-action@v3
+        with:
+          url: https://vault.jarllindquist.com
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            kv/data/server-deploy SSH_HOST | SERVER_HOST ;
+            kv/data/server-deploy SSH_USERNAME | SERVER_USER ;
+            kv/data/server-deploy SERVER_PORT | SERVER_PORT ;
+            kv/data/server-deploy SSH_PRIVATE_KEY | SERVER_PRIVATE_KEY ;
+            kv/data/server-deploy SSH_HOST_FINGERPRINT | SSH_HOST_FINGERPRINT ;
+            kv/data/databases POSTGRES_PASSWORD | POSTGRES_PASSWORD ;
+            kv/data/databases PGADMIN_PASSWORD | PGADMIN_PASSWORD ;
+            kv/data/databases MYSQL_ROOT_PASSWORD | MYSQL_ROOT_PASSWORD ;
+            kv/data/databases MYSQL_PASSWORD | MYSQL_PASSWORD ;
+            kv/data/databases TRAVEL_AGENT_PASSWORD | TRAVEL_AGENT_PASSWORD ;
+            kv/data/databases PROJECT_B_ROOT_PASSWORD | PROJECT_B_ROOT_PASSWORD ;
+            kv/data/databases PROJECT_B_PASSWORD | PROJECT_B_PASSWORD ;
+            kv/data/databases ADMINER_BASIC_AUTH | ADMINER_BASIC_AUTH
+
+      # .env som en base64-sträng, så att inga specialtecken krånglar på vägen. Vault-värdena maskas
+      # i loggen av vault-action, men base64-strängen är ny, så den maskas här.
+      - name: Build the .env
+        run: |
+          set -eu
+          for name in POSTGRES_PASSWORD PGADMIN_PASSWORD MYSQL_ROOT_PASSWORD MYSQL_PASSWORD \
+                      TRAVEL_AGENT_PASSWORD PROJECT_B_ROOT_PASSWORD PROJECT_B_PASSWORD ADMINER_BASIC_AUTH; do
+            value="${!name}"
+            case "$value" in *"'"*) echo "::error::$name innehåller ' (enkelfnutt)"; exit 1 ;; esac
+            printf "%s='%s'\n" "$name" "$value"
+          done > env.tmp
+          b64=$(base64 -w0 env.tmp)
+          rm env.tmp
+          echo "::add-mask::$b64"
+          echo "ENV_B64=$b64" >> "$GITHUB_ENV"
+
+      # Låst till en commit (v1.2.5): steget får SSH-nyckeln. Serverns identitet kontrolleras mot
+      # fingeravtrycket i Vault i stället för att lita på vilken server som helst.
+      - name: Start on the server
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          key: ${{ env.SERVER_PRIVATE_KEY }}
+          port: ${{ env.SERVER_PORT }}
+          fingerprint: ${{ env.SSH_HOST_FINGERPRINT }}
+          envs: DEPLOY_DIR,ENV_B64
+          script: |
+            set -e
+            cd "$DEPLOY_DIR"
+            # Bara framåt; avbryts om servern har committat något eget
+            git pull --ff-only
+            umask 077
+            printf '%s' "$ENV_B64" | base64 -d > .env
+            docker compose -f docker-compose.prod.yml config --quiet
+            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml ps --format 'table {{.Name}}\t{{.Status}}\t{{.Ports}}'
